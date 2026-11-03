@@ -13,6 +13,16 @@
     <style>
 
         .sub { color: var(--muted); margin-top: 8px; }
+        .pics-row { display: flex; gap: 14px; align-items: center; flex-wrap: wrap; margin-bottom: 8px; }
+        .logo-preview { width: 84px; height: 84px; border-radius: 50%; background: var(--sand) center / cover no-repeat; border: 3px solid var(--card); box-shadow: var(--shadow); display: grid; place-items: center; font-family: var(--serif); font-size: 2rem; font-weight: 700; color: var(--wine); overflow: hidden; }
+        .photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; margin: 10px 0 14px; }
+        .photo-item { position: relative; border-radius: 14px; overflow: hidden; border: 1px solid var(--line); background: var(--sand); }
+        .photo-item img { display: block; width: 100%; height: 90px; object-fit: cover; }
+        .photo-item button { position: absolute; top: 6px; inset-inline-end: 6px; border: 0; border-radius: 999px; width: 26px; height: 26px; cursor: pointer; background: rgba(94,22,36,0.9); color: #F2E7D0; font-weight: 800; line-height: 1; }
+        .file-btn { position: relative; overflow: hidden; display: inline-block; }
+        .file-btn input { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; }
+        .check { display: flex; gap: 10px; align-items: flex-start; font-weight: 600; font-size: 0.92rem; cursor: pointer; }
+        .check input { width: auto; margin-top: 4px; padding: 0; flex-shrink: 0; }
         .section-title { margin: 6px 0 14px; font-size: 2rem; color: var(--wine); }
         .intro { color: var(--ink-2); font-size: 0.95rem; margin-bottom: 14px; }
         .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin: 18px 0 22px; }
@@ -77,6 +87,7 @@
         <!-- Step 2: dashboard -->
         <div id="dashboard" hidden>
             <div class="notice warn" id="verifyNotice" hidden>Your shop is waiting for approval and is not visible to customers yet.</div>
+            <div class="notice warn unread-banner" id="unreadBanner" hidden></div>
 
             <div class="stats-grid">
                 <div class="stat-box"><div class="stat-val" id="totalCount">0</div><div class="stat-label">Total Orders</div></div>
@@ -93,8 +104,27 @@
                     <div class="full"><label for="eEmail">Shop email</label><input id="eEmail" type="email" required></div>
                     <div><label for="eStreet">Street / area</label><input id="eStreet" required></div>
                     <div><label for="eCity">City</label><input id="eCity" required></div>
+                    <div class="full">
+                        <label class="check"><input type="checkbox" id="eAi">
+                            <span>Let the <strong>Hadiya Assistant</strong> answer customers first (it is always labelled as automatic, and stops as soon as you write in a chat).</span>
+                        </label>
+                    </div>
                     <div class="full"><button class="btn" type="submit" id="detailsBtn">Save changes</button></div>
                 </form>
+            </section>
+
+            <section class="card">
+                <h2>Logo and photos</h2>
+                <p class="intro">They appear on your shop card and your shop page. Pictures are shrunk automatically.</p>
+                <label>Logo</label>
+                <div class="pics-row">
+                    <div class="logo-preview" id="logoPreview"></div>
+                    <span class="btn btn-sm file-btn" id="logoPick">Choose logo<input type="file" accept="image/*" id="logoFile"></span>
+                    <button type="button" class="btn btn-sm btn-outline" id="logoRemove" hidden>Remove logo</button>
+                </div>
+                <label>Photos (up to 4)</label>
+                <div class="photo-grid" id="photoGrid"></div>
+                <span class="btn btn-sm file-btn" id="photoPick">Add photo<input type="file" accept="image/*" id="photoFile"></span>
             </section>
 
             <section class="card">
@@ -108,7 +138,7 @@
                 </form>
             </section>
 
-            <h2 class="section-title">Orders</h2>
+            <h2 class="section-title" id="ordersTitle">Orders</h2>
             <div id="ordersList"></div>
         </div>
     </div>
@@ -169,6 +199,7 @@
                 $('shopSubtitle').textContent = shop.name;
                 $('verifyNotice').hidden = shop.isVerified !== false;
                 fillDetailsForm();
+                renderPictures();
                 renderServices();
                 await loadOrders();
             } catch (err) {
@@ -208,6 +239,7 @@
             $('eEmail').value = shop.email || '';
             $('eStreet').value = (shop.address && shop.address.street) || '';
             $('eCity').value = (shop.address && shop.address.city) || '';
+            $('eAi').checked = shop.aiReplies !== false;
         }
 
         $('detailsForm').addEventListener('submit', async event => {
@@ -222,6 +254,7 @@
                         name: $('eName').value.trim(),
                         description: $('eDesc').value.trim(),
                         email: $('eEmail').value.trim(),
+                        aiReplies: $('eAi').checked,
                         // keep the other address fields (country etc.) as they are
                         address: Object.assign({}, shop.address, {
                             street: $('eStreet').value.trim(),
@@ -236,6 +269,88 @@
                 $('message').scrollIntoView({ behavior: 'smooth', block: 'center' });
             } catch (err) { handleError(err); }
             btn.disabled = false;
+        });
+
+        /* ---- logo and photos ---- */
+        const isImg = v => typeof v === 'string' && /^(https?:\/\/|data:image\/)/i.test(v);
+        const MAX_PHOTOS = 4;
+        function note(text, type) { showMessage(text, type); if (text) $('message').scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+
+        // Shrinks a picture in the browser: longest side <= maxSide, JPEG, quality lowered until it is small enough.
+        function shrinkImage(file, maxSide, maxChars, keepTransparency) {
+            return new Promise((resolve, reject) => {
+                if (!file || !/^image\//.test(file.type)) return reject(new Error('Please choose an image file.'));
+                const url = URL.createObjectURL(file);
+                const img = new Image();
+                img.onload = () => {
+                    URL.revokeObjectURL(url);
+                    const scale = Math.min(1, maxSide / Math.max(img.width, img.height));
+                    const w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+                    const canvas = document.createElement('canvas');
+                    canvas.width = w; canvas.height = h;
+                    const ctx = canvas.getContext('2d');
+                    if (keepTransparency) {
+                        ctx.drawImage(img, 0, 0, w, h);
+                        const png = canvas.toDataURL('image/png');
+                        if (png.length <= maxChars) return resolve(png);
+                    }
+                    ctx.fillStyle = '#F2E7D0'; ctx.fillRect(0, 0, w, h); ctx.drawImage(img, 0, 0, w, h);
+                    for (let q = 0.85; q >= 0.35; q -= 0.1) {
+                        const out = canvas.toDataURL('image/jpeg', q);
+                        if (out.length <= maxChars) return resolve(out);
+                    }
+                    reject(new Error('This image is too large. Please choose a smaller one.'));
+                };
+                img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('Could not read this image.')); };
+                img.src = url;
+            });
+        }
+
+        function renderPictures() {
+            const logo = isImg(shop.logo) ? shop.logo : '';
+            const prev = $('logoPreview');
+            prev.style.backgroundImage = logo ? "url('" + logo + "')" : '';
+            prev.textContent = logo ? '' : String(shop.name || '?').trim().charAt(0).toUpperCase();
+            $('logoRemove').hidden = !logo;
+
+            const photos = (shop.images || []).filter(isImg);
+            $('photoGrid').innerHTML = '';
+            photos.forEach((src, i) => {
+                const item = document.createElement('div');
+                item.className = 'photo-item';
+                const im = document.createElement('img'); im.src = src; im.alt = '';
+                const rm = document.createElement('button'); rm.type = 'button'; rm.textContent = '×'; rm.setAttribute('aria-label', 'Remove');
+                rm.addEventListener('click', () => savePictures({ images: photos.filter((_, k) => k !== i) }));
+                item.append(im, rm);
+                $('photoGrid').appendChild(item);
+            });
+            $('photoPick').hidden = photos.length >= MAX_PHOTOS;
+        }
+
+        async function savePictures(body) {
+            showMessage('');
+            try {
+                const data = await api('/shops/' + encodeURIComponent(shop._id), { method: 'PUT', body });
+                shop = Object.assign({}, shop, { logo: data.shop.logo, images: data.shop.images });
+                renderPictures();
+                note('Saved.', 'ok');
+            } catch (err) { handleError(err); }
+        }
+
+        $('logoFile').addEventListener('change', async e => {
+            const file = e.target.files[0]; e.target.value = '';
+            if (!file) return;
+            try { await savePictures({ logo: await shrinkImage(file, 320, 120 * 1024, true) }); }
+            catch (err) { note(err.message, 'error'); }
+        });
+        $('logoRemove').addEventListener('click', () => savePictures({ logo: '' }));
+        $('photoFile').addEventListener('change', async e => {
+            const file = e.target.files[0]; e.target.value = '';
+            if (!file) return;
+            const photos = (shop.images || []).filter(isImg);
+            if (photos.length >= MAX_PHOTOS) return note('You can add up to 4 photos.', 'error');
+            try { await savePictures({ images: photos.concat(await shrinkImage(file, 1000, 250 * 1024, false)) }); }
+            catch (err) { note(err.message, 'error'); }
         });
 
         function renderServices() {
@@ -328,13 +443,23 @@
                     ${next.length ? `<div class="order-actions">${next.map(s =>
                         `<button type="button" class="act ${NEGATIVE.includes(s) ? 'neg' : ''}" data-id="${esc(order._id)}" data-status="${esc(s)}">${esc(ACTION_LABELS[s] || s)}</button>`
                     ).join('')}</div>` : ''}
-                    <div class="order-actions"><a class="btn btn-outline btn-sm" href="chat.html?order=${encodeURIComponent(order._id)}">💬 Chat with customer</a></div>
+                    <div class="order-actions"><a class="btn btn-outline btn-sm" data-chat="${esc(order._id)}" href="chat.html?order=${encodeURIComponent(order._id)}">💬 Chat with customer</a></div>
                 </div>`;
             }).join('');
 
             document.querySelectorAll('.act').forEach(btn =>
                 btn.addEventListener('click', () => changeStatus(btn)));
+            if (typeof applyUnread === 'function') applyUnread();
         }
+
+        // "You have new messages" bar at the top, so you don't have to open every chat to find out
+        document.addEventListener('unread-updated', event => {
+            const total = event.detail.total;
+            const bar = $('unreadBanner');
+            bar.hidden = total === 0;
+            bar.innerHTML = '<span>💬 You have <strong>' + total + '</strong> new message' + (total === 1 ? '' : 's') +
+                ' from customers.</span><a href="#ordersTitle">See the orders</a>';
+        });
 
         async function changeStatus(button) {
             const status = button.dataset.status;

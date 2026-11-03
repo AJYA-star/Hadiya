@@ -97,6 +97,16 @@ body.arabic .brand-name { font-family: "Gulzar", var(--arabic); font-size: 3.1re
 }
 .lang-btn:hover { background: var(--coffee); color: var(--on-wine); }
 
+/* ---------- unread chat badges ---------- */
+.nav-badge, .unread-pill {
+  display: inline-block; min-width: 1.4em; padding: 1px 7px; margin-left: 6px;
+  border-radius: 999px; background: #C0392B; color: #FFF3E0;
+  font-size: 0.72rem; font-weight: 800; line-height: 1.5; text-align: center; vertical-align: middle;
+}
+.nav-badge[hidden] { display: none; }
+.unread-banner { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+.unread-banner a { text-decoration: underline; font-weight: 800; }
+
 /* ---------- buttons ---------- */
 .btn {
   display: inline-block; padding: 13px 26px;
@@ -188,3 +198,18 @@ body.arabic .site-footer .brand-name { font-size: 2.2rem; line-height: 1.5; }
   .brand-name { font-size: 2.1rem; }
   body.arabic .brand-name { font-size: 2.6rem; }
 }
+
+/* ---------- Arabic (right-to-left) adjustments ---------- */
+html[dir="rtl"] .nav-badge, html[dir="rtl"] .unread-pill { margin-left: 0; margin-right: 6px; }
+html[dir="rtl"] .order-card { border-left: 1px solid var(--line); border-right: 6px solid var(--wine); }
+html[dir="rtl"] .total, html[dir="rtl"] .actions, html[dir="rtl"] .head-side { text-align: left; }
+html[dir="rtl"] .search svg { left: auto; right: 20px; }
+html[dir="rtl"] .search input { padding: 17px 52px 17px 22px; }
+html[dir="rtl"] .menu-row .book-btn { margin-left: 0; margin-right: 4px; }
+html[dir="rtl"] .msg .time { text-align: left; }
+html[dir="rtl"] .msg.mine { border-bottom-right-radius: 18px; border-bottom-left-radius: 6px; }
+html[dir="rtl"] .msg.theirs, html[dir="rtl"] .msg.bot { border-bottom-left-radius: 18px; border-bottom-right-radius: 6px; }
+html[dir="rtl"] .nav, html[dir="rtl"] .topbar { direction: rtl; }
+body.arabic .status, body.arabic .order-status, body.arabic .msg .who { letter-spacing: 0; text-transform: none; }
+body.arabic .menu-row .m-name, body.arabic .shop-name, body.arabic .m-price, body.arabic .total { font-family: var(--arabic); }
+body.arabic .m-desc { font-style: normal; }

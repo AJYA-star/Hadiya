@@ -293,7 +293,7 @@
                 if (order.createdAt) {
                     const date = new Date(order.createdAt);
                     if (!Number.isNaN(date.getTime())) {
-                        addDetail(card, 'Placed on', date.toLocaleString());
+                        addDetail(card, 'Placed on', date.toLocaleString(LOC));
                     }
                 }
 
@@ -346,12 +346,14 @@
                 chatLink.className = 'btn btn-outline btn-sm';
                 chatLink.style.marginTop = '14px';
                 chatLink.href = 'chat.html?order=' + encodeURIComponent(order._id);
+                chatLink.dataset.chat = order._id;
                 chatLink.textContent = '💬 Chat with customer';
                 card.appendChild(chatLink);
                 fragment.appendChild(card);
             });
 
             container.replaceChildren(fragment);
+            if (typeof applyUnread === 'function') applyUnread();
         }
 
         async function fetchShopOrders() {

@@ -47,6 +47,7 @@
 
         <div style="max-width:800px; margin-top:18px">
             <div class="banner" id="placedBanner" hidden>🎉 Order placed! The shop will confirm it shortly.</div>
+            <div class="notice warn unread-banner" id="unreadBanner" hidden></div>
             <div id="ordersList"><p class="loading">Loading your orders...</p></div>
         </div>
     </div>
@@ -83,7 +84,7 @@
                 const delivery = order.deliveryDetails || {};
                 const pickupText = pickup.type === 'shop_pickup' ? 'Shop picks up from: ' + (pickup.address || '') : 'You drop off at the shop';
                 const deliveryText = delivery.type === 'shop_delivery' ? 'Delivered to: ' + (delivery.address || '') : 'You collect from the shop';
-                const date = order.createdAt ? new Date(order.createdAt).toLocaleString() : '';
+                const date = order.createdAt ? new Date(order.createdAt).toLocaleString(LOC) : '';
 
                 return `
                 <div class="order-card">
@@ -99,13 +100,14 @@
                     ${order.pricing && Number(order.pricing.deliveryFee) > 0 ? `<div class="meta">Service ${esc(money(order.pricing.servicePrice))} + delivery ${esc(money(order.pricing.deliveryFee))}</div>` : ''}
                     <div class="total">${esc(money(order.pricing && order.pricing.total))}</div>
                     <div class="actions">
-                        <a class="btn btn-sm" href="chat.html?order=${encodeURIComponent(order._id)}">💬 Chat with the shop</a>
+                        <a class="btn btn-sm" data-chat="${esc(order._id)}" href="chat.html?order=${encodeURIComponent(order._id)}">💬 Chat with the shop</a>
                         ${status === 'pending' ? `<button class="cancel-btn" data-id="${esc(order._id)}">Cancel order</button>` : ''}
                     </div>
                 </div>`;
             }).join('');
 
             list.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', () => cancelOrder(btn)));
+            if (typeof applyUnread === 'function') applyUnread();
         }
 
         async function cancelOrder(button) {
@@ -136,6 +138,15 @@
                 }
             }
         }
+
+        // "You have new messages" bar at the top
+        document.addEventListener('unread-updated', event => {
+            const total = event.detail.total;
+            const bar = document.getElementById('unreadBanner');
+            bar.hidden = total === 0;
+            bar.textContent = total === 1 ? '💬 You have 1 new message. Open the chat on the order below.'
+                                          : '💬 You have ' + total + ' new messages. Open the chat on the orders below.';
+        });
 
         fetchOrders();
     </script>

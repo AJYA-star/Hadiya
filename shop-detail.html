@@ -19,6 +19,13 @@
         .menu-card .script { display: block; font-size: 2rem; margin-bottom: 6px; }
         .menu-row { flex-wrap: wrap; }
         .menu-row .book-btn { margin-left: 4px; }
+        .hero-top { display: flex; align-items: center; gap: 16px; }
+        .hero-logo { width: 72px; height: 72px; border-radius: 50%; object-fit: cover; border: 3px solid var(--card); box-shadow: var(--shadow); background: var(--sand); flex-shrink: 0; }
+        .gallery { margin: 14px 0 6px; }
+        .gallery-main { width: 100%; height: clamp(200px, 42vw, 340px); border-radius: 22px; object-fit: cover; background: var(--sand); box-shadow: var(--shadow); display: block; }
+        .gallery-thumbs { display: flex; gap: 10px; margin-top: 10px; overflow-x: auto; }
+        .gallery-thumbs img { width: 76px; height: 58px; object-fit: cover; border-radius: 12px; border: 2px solid transparent; cursor: pointer; flex-shrink: 0; background: var(--sand); }
+        .gallery-thumbs img.on { border-color: var(--wine); }
         .contact-info { margin: 22px 4px 0; color: var(--muted); font-size: 0.95rem; }
         .contact-info p { margin: 4px 0; }
         .error { color: var(--wine); text-align: center; padding: 30px 10px; font-weight: 700; }
@@ -58,8 +65,15 @@
 
         <a href="shops.html" class="back-link">← Back to shops</a>
         <div class="shop-hero">
-            <h1 id="shopTitle">Loading shop...</h1>
+            <div class="hero-top">
+                <img id="shopLogo" class="hero-logo" alt="" hidden>
+                <h1 id="shopTitle">Loading shop...</h1>
+            </div>
             <p id="shopDescription" class="description"></p>
+        </div>
+        <div class="gallery" id="gallery" hidden>
+            <img id="galleryMain" class="gallery-main" alt="">
+            <div class="gallery-thumbs" id="galleryThumbs"></div>
         </div>
 
         <div class="card menu-card">
@@ -150,6 +164,27 @@
 
         const $ = id => document.getElementById(id);
 
+        const isImg = v => typeof v === 'string' && /^(https?:\/\/|data:image\/)/i.test(v);
+        function renderPictures(shop) {
+            if (isImg(shop.logo)) { $('shopLogo').src = shop.logo; $('shopLogo').hidden = false; }
+            const photos = (shop.images || []).filter(isImg);
+            if (!photos.length) return;
+            const show = i => {
+                $('galleryMain').src = photos[i];
+                $('galleryThumbs').querySelectorAll('img').forEach((im, k) => im.classList.toggle('on', k === i));
+            };
+            $('galleryThumbs').innerHTML = '';
+            photos.forEach((src, i) => {
+                if (photos.length < 2) return;
+                const im = document.createElement('img');
+                im.src = src; im.alt = '';
+                im.addEventListener('click', () => show(i));
+                $('galleryThumbs').appendChild(im);
+            });
+            $('gallery').hidden = false;
+            show(0);
+        }
+
         function showShopError(message) {
             $('shopTitle').textContent = 'Shop unavailable';
             $('servicesList').innerHTML = `<p class="error">${esc(message)}</p>`;
@@ -165,6 +200,7 @@
                 document.title = currentShop.name + ' - Hadiya';
                 $('shopTitle').textContent = currentShop.name;
                 $('shopDescription').textContent = currentShop.description || '';
+                renderPictures(currentShop);
 
                 const a = currentShop.address || {};
                 $('shopAddress').textContent = '📍 ' + [a.street, a.city].filter(Boolean).join(', ');
@@ -209,7 +245,7 @@
             selectedService = (currentShop.services || []).find(s => s._id === serviceId);
             if (!selectedService) return;
 
-            $('bookingSummary').textContent = `${selectedService.name} at ${currentShop.name}`;
+            $('bookingSummary').textContent = selectedService.name + (IS_AR ? ' لدى ' : ' at ') + currentShop.name;
             $('tService').textContent = 'AED ' + selectedService.price;
             $('contactPhone').value = (user && user.phone) || '';
             $('formError').textContent = '';
