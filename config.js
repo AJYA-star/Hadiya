@@ -216,6 +216,14 @@ const AR = {
   'Photos must be JPG, PNG or WebP images': 'يجب أن تكون الصور بصيغة JPG أو PNG أو WebP', 'A photo is too large. Please choose a smaller one': 'إحدى الصور كبيرة جداً. يرجى اختيار صورة أصغر',
   'You can add up to 4 photos': 'يمكنك إضافة حتى 4 صور',
 
+  /* reviews */
+  'Reviews': 'التقييمات', 'How was it?': 'كيف كانت تجربتك؟', 'Write a short comment (optional)': 'اكتب تعليقاً قصيراً (اختياري)',
+  'Send review': 'إرسال التقييم', 'Your rating': 'تقييمك', 'Thank you for your review': 'شكراً لتقييمك',
+  'Please choose a rating from 1 to 5 stars': 'يرجى اختيار تقييم من 1 إلى 5 نجوم',
+  'No reviews yet. You can rate a shop after your order is completed': 'لا توجد تقييمات بعد. يمكنك تقييم المتجر بعد اكتمال طلبك',
+  'You can only review your own orders': 'يمكنك تقييم طلباتك فقط', 'You can review an order once it is completed': 'يمكنك تقييم الطلب بعد اكتماله',
+  'Your comment is too long (max 500 characters)': 'تعليقك طويل جداً (الحد الأقصى 500 حرف)', 'You already reviewed this order': 'لقد قيّمت هذا الطلب مسبقاً',
+
   /* shop-orders.html */
   'Shop Orders': 'طلبات المتجر', 'incoming orders': 'الطلبات الواردة', 'Manage shop orders': 'إدارة طلبات المتجر',
   'View customer orders and update their status': 'اعرض طلبات العملاء وحدّث حالتها', 'Refresh orders': 'تحديث الطلبات',
@@ -291,6 +299,7 @@ const AR_PATTERNS = [
   [/^💬 You have (\d+) new messages\.?(.*)$/, (m, n) => '💬 لديك ' + n + ' رسائل جديدة. افتح المحادثات في الطلبات أدناه.'],
   [/^(.+) - Hadiya$/, (m, a) => trText(a) + ' - هدية'],
   [/^(\d+) services?$/, (m, n) => n + ' خدمة'],
+  [/^(\d+) reviews?$/, (m, n) => n + ' تقييم'],
   [/^(\d+) shops?$/, (m, n) => n + ' متجر']
 ];
 

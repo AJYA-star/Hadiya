@@ -127,7 +127,7 @@
                         <div class="shop-location">${city ? esc(city) : ''}</div>
                         <div class="shop-rating">
                             <span class="star">★</span> ${esc(rating)}
-                            <span style="color:var(--muted); font-size:0.85em;">(${esc(count)} reviews)</span>
+                            <span style="color:var(--muted); font-size:0.85em;">(${esc(count)} ${count === 1 ? 'review' : 'reviews'})</span>
                         </div>
                         <div class="shop-price">Starting from <strong>${esc(fromPrice)}</strong></div>
                     </div>

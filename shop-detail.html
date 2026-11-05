@@ -26,6 +26,13 @@
         .gallery-thumbs { display: flex; gap: 10px; margin-top: 10px; overflow-x: auto; }
         .gallery-thumbs img { width: 76px; height: 58px; object-fit: cover; border-radius: 12px; border: 2px solid transparent; cursor: pointer; flex-shrink: 0; background: var(--sand); }
         .gallery-thumbs img.on { border-color: var(--wine); }
+        .reviews-sum { display: flex; align-items: baseline; gap: 10px; margin: 6px 4px 10px; color: var(--ink-2); font-weight: 700; }
+        .reviews-sum .big { font-family: var(--script); font-size: 2.2rem; color: var(--wine); }
+        .rv { padding: 12px 4px; border-top: 1px solid var(--line); }
+        .rv-top { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-weight: 700; color: var(--head); }
+        .rv-stars { color: var(--lemon); letter-spacing: 2px; }
+        .rv-date { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+        .rv-text { margin-top: 3px; color: var(--ink-2); overflow-wrap: anywhere; }
         .contact-info { margin: 22px 4px 0; color: var(--muted); font-size: 0.95rem; }
         .contact-info p { margin: 4px 0; }
         .error { color: var(--wine); text-align: center; padding: 30px 10px; font-weight: 700; }
@@ -83,6 +90,14 @@
             <div class="contact-info">
                 <p id="shopAddress"></p>
             </div>
+        </div>
+    </div>
+
+    <div class="wrap">
+        <div class="card" id="reviewsCard" hidden>
+            <span class="script">Reviews</span>
+            <div class="reviews-sum" id="reviewsSum"></div>
+            <div id="reviewsList"></div>
         </div>
     </div>
 
@@ -185,6 +200,47 @@
             show(0);
         }
 
+        async function loadReviews(id) {
+            try {
+                const data = await api('/shops/' + encodeURIComponent(id) + '/reviews');
+                const count = (data.rating && data.rating.count) || 0;
+                const avg = (data.rating && data.rating.average) || 0;
+                const sum = $('reviewsSum');
+                const list = $('reviewsList');
+                sum.innerHTML = '';
+                list.innerHTML = '';
+                if (!count || !(data.reviews || []).length) {
+                    const p = document.createElement('p');
+                    p.className = 'rv-text';
+                    p.textContent = 'No reviews yet. You can rate a shop after your order is completed.';
+                    list.appendChild(p);
+                } else {
+                    const big = document.createElement('span'); big.className = 'big'; big.textContent = '★ ' + Number(avg).toFixed(1);
+                    const n = document.createElement('span'); n.textContent = count + (count === 1 ? ' review' : ' reviews');
+                    sum.append(big, n);
+                    data.reviews.forEach(r => {
+                        const row = document.createElement('div'); row.className = 'rv';
+                        const top = document.createElement('div'); top.className = 'rv-top';
+                        const who = document.createElement('span'); who.setAttribute('data-notr', ''); who.textContent = r.name;
+                        const st = document.createElement('span'); st.className = 'rv-stars'; st.textContent = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+                        top.append(who, st);
+                        row.appendChild(top);
+                        const dt = new Date(r.createdAt);
+                        if (!Number.isNaN(dt.getTime())) {
+                            const d = document.createElement('div'); d.className = 'rv-date'; d.textContent = dt.toLocaleDateString(LOC, { day: 'numeric', month: 'short', year: 'numeric' });
+                            row.appendChild(d);
+                        }
+                        if (r.comment) {
+                            const c = document.createElement('div'); c.className = 'rv-text'; c.setAttribute('data-notr', ''); c.textContent = r.comment;
+                            row.appendChild(c);
+                        }
+                        list.appendChild(row);
+                    });
+                }
+                $('reviewsCard').hidden = false;
+            } catch (e) { /* reviews are optional: stay quiet if they cannot load */ }
+        }
+
         function showShopError(message) {
             $('shopTitle').textContent = 'Shop unavailable';
             $('servicesList').innerHTML = `<p class="error">${esc(message)}</p>`;
@@ -201,6 +257,7 @@
                 $('shopTitle').textContent = currentShop.name;
                 $('shopDescription').textContent = currentShop.description || '';
                 renderPictures(currentShop);
+                loadReviews(shopId);
 
                 const a = currentShop.address || {};
                 $('shopAddress').textContent = '📍 ' + [a.street, a.city].filter(Boolean).join(', ');

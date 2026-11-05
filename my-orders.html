@@ -23,6 +23,15 @@
         .cancel-btn { background: transparent; color: var(--wine); border: 1.5px solid var(--wine); padding: 8px 18px; border-radius: 999px; cursor: pointer; font: inherit; font-weight: 700; }
         .cancel-btn:hover { background: var(--wine); color: var(--on-wine); }
         .cancel-btn:disabled { opacity: 0.5; }
+        .review-box, .review-done { margin-top: 12px; padding: 14px; border-radius: 14px; background: var(--bg-2); border: 1px solid var(--line); }
+        .review-title { font-family: var(--serif); font-weight: 700; font-size: 1.3rem; color: var(--head); }
+        .stars { display: flex; gap: 2px; margin: 4px 0 8px; }
+        .stars button { background: none; border: 0; padding: 0 2px; font-size: 2rem; line-height: 1.1; color: #B09A72; cursor: pointer; }
+        .stars button.on { color: var(--lemon); }
+        .stars-static { color: var(--lemon); font-size: 1.3rem; letter-spacing: 2px; }
+        .review-box textarea { min-height: 64px; margin-bottom: 8px; }
+        .review-err { color: var(--wine); font-weight: 700; font-size: 0.88rem; min-height: 1.2em; margin-bottom: 6px; }
+        .review-text { margin-top: 4px; color: var(--ink-2); overflow-wrap: anywhere; }
         .no-orders { text-align: center; padding: 50px 10px; color: var(--muted); font-weight: 700; }
         .no-orders a { color: var(--wine); font-weight: 800; text-decoration: underline; }
 
@@ -71,6 +80,44 @@
 
         function money(n) { return 'AED ' + Number(n || 0); }
 
+        function starsText(n) { return '★'.repeat(n) + '☆'.repeat(5 - n); }
+
+        function reviewBlock(order) {
+            if (order.status !== 'completed') return '';
+            if (order.review) {
+                return `<div class="review-done"><div class="review-title">Your rating</div>
+                    <div class="stars-static">${starsText(order.review.rating)}</div>
+                    ${order.review.comment ? `<div class="review-text" data-notr>${esc(order.review.comment)}</div>` : ''}</div>`;
+            }
+            return `<div class="review-box" data-order="${esc(order._id)}">
+                <div class="review-title">How was it?</div>
+                <div class="stars">${[1, 2, 3, 4, 5].map(n => `<button type="button" data-star="${n}" aria-label="${n}">★</button>`).join('')}</div>
+                <textarea maxlength="500" placeholder="Write a short comment (optional)"></textarea>
+                <div class="review-err"></div>
+                <button type="button" class="btn btn-sm" data-send-review>Send review</button>
+            </div>`;
+        }
+
+        function wireReviews() {
+            list.querySelectorAll('.review-box').forEach(box => {
+                let rating = 0;
+                const err = box.querySelector('.review-err');
+                const paint = () => box.querySelectorAll('[data-star]').forEach(b => b.classList.toggle('on', Number(b.dataset.star) <= rating));
+                box.querySelectorAll('[data-star]').forEach(b => b.addEventListener('click', () => { rating = Number(b.dataset.star); err.textContent = ''; paint(); }));
+                const send = box.querySelector('[data-send-review]');
+                send.addEventListener('click', async () => {
+                    if (!rating) { err.textContent = 'Please choose a rating from 1 to 5 stars.'; return; }
+                    send.disabled = true; err.textContent = '';
+                    try {
+                        await api('/orders/' + encodeURIComponent(box.dataset.order) + '/review', {
+                            method: 'POST', body: { rating, comment: box.querySelector('textarea').value.trim() }
+                        });
+                        fetchOrders();
+                    } catch (e) { err.textContent = e.message; send.disabled = false; }
+                });
+            });
+        }
+
         function render(orders) {
             if (!orders.length) {
                 list.innerHTML = '<div class="no-orders">No orders found yet. <a href="shops.html">Time to wrap some gifts!</a></div>';
@@ -99,6 +146,7 @@
                     ${date ? `<div class="meta">🕒 Placed ${esc(date)}</div>` : ''}
                     ${order.pricing && Number(order.pricing.deliveryFee) > 0 ? `<div class="meta">Service ${esc(money(order.pricing.servicePrice))} + delivery ${esc(money(order.pricing.deliveryFee))}</div>` : ''}
                     <div class="total">${esc(money(order.pricing && order.pricing.total))}</div>
+                    ${reviewBlock(order)}
                     <div class="actions">
                         <a class="btn btn-sm" data-chat="${esc(order._id)}" href="chat.html?order=${encodeURIComponent(order._id)}">💬 Chat with the shop</a>
                         ${status === 'pending' ? `<button class="cancel-btn" data-id="${esc(order._id)}">Cancel order</button>` : ''}
@@ -107,6 +155,7 @@
             }).join('');
 
             list.querySelectorAll('.cancel-btn').forEach(btn => btn.addEventListener('click', () => cancelOrder(btn)));
+            wireReviews();
             if (typeof applyUnread === 'function') applyUnread();
         }
 
