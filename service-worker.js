@@ -2,7 +2,7 @@
    - Pages & scripts: network first (so you always get the newest version), cache as offline fallback
    - API calls and other websites: never touched (always live data)
    Bump CACHE_NAME whenever you want to force everyone's cache to reset. */
-const CACHE_NAME = 'hadiya-v7';
+const CACHE_NAME = 'hadiya-v8';
 
 const PRECACHE = [
   './',
@@ -54,5 +54,41 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() => caches.match(request).then(cached => cached || caches.match('index.html')))
+  );
+});
+
+/* ---- Phone notifications (Web Push) ----
+   The server sends a small encrypted message { title, body, url, tag }; the phone wakes this
+   file up even when the app is closed, and we show it as a notification. */
+self.addEventListener('push', event => {
+  let data = {};
+  try { data = event.data ? event.data.json() : {}; } catch (e) { data = {}; }
+  const options = {
+    body: data.body || '',
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    dir: 'auto',
+    data: { url: data.url || 'index.html' }
+  };
+  if (data.tag) { options.tag = data.tag; options.renotify = true; }   // same order/chat: replace instead of stacking
+  event.waitUntil(self.registration.showNotification(data.title || 'Hadiya', options));
+});
+
+/* Tapping the notification opens (or focuses) the right page */
+self.addEventListener('notificationclick', event => {
+  event.notification.close();
+  const target = new URL((event.notification.data && event.notification.data.url) || 'index.html', self.registration.scope).href;
+  event.waitUntil(
+    self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then(async list => {
+      for (const client of list) {
+        if (!client.url.startsWith(self.registration.scope)) continue;
+        try {
+          const focused = await client.focus();
+          if (focused && 'navigate' in focused && focused.url !== target) await focused.navigate(target);
+          return;
+        } catch (e) { /* fall through and open a new window */ }
+      }
+      await self.clients.openWindow(target);
+    })
   );
 });

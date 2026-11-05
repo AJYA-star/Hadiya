@@ -51,8 +51,12 @@ function getUser() {
 }
 
 function logout() {
-  try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch (e) {}
-  window.location.href = 'index.html';
+  const finish = () => {
+    try { localStorage.removeItem('token'); localStorage.removeItem('user'); } catch (e) {}
+    window.location.href = 'index.html';
+  };
+  // stop alerts for this phone first (so the next person who signs in here does not get them), but never wait long
+  Promise.race([disablePushOnThisDevice(), new Promise(r => setTimeout(r, 1500))]).then(finish, finish);
 }
 
 /* Only allow redirects to pages on this site (stops open-redirect tricks) */
@@ -223,6 +227,14 @@ const AR = {
   'No reviews yet. You can rate a shop after your order is completed': 'لا توجد تقييمات بعد. يمكنك تقييم المتجر بعد اكتمال طلبك',
   'You can only review your own orders': 'يمكنك تقييم طلباتك فقط', 'You can review an order once it is completed': 'يمكنك تقييم الطلب بعد اكتماله',
   'Your comment is too long (max 500 characters)': 'تعليقك طويل جداً (الحد الأقصى 500 حرف)', 'You already reviewed this order': 'لقد قيّمت هذا الطلب مسبقاً',
+
+  /* notifications */
+  '🔔 Get an alert on this phone when something new arrives, even when the app is closed.': '🔔 احصل على تنبيه على هذا الهاتف عند وصول أي جديد، حتى عندما يكون التطبيق مغلقاً.',
+  'Turn on notifications': 'تفعيل الإشعارات', 'Not now': 'ليس الآن', 'Notifications are on ✓': 'تم تفعيل الإشعارات ✓',
+  'Notifications are blocked in this browser. Allow them in the site settings and try again.': 'الإشعارات محظورة في هذا المتصفح. اسمح بها من إعدادات الموقع ثم حاول مجدداً.',
+  'Notifications are not set up yet.': 'الإشعارات غير مفعّلة بعد.', 'Could not turn on notifications.': 'تعذّر تفعيل الإشعارات.',
+  '🔔 To get alerts on iPhone: tap Share, then "Add to Home Screen", and open Hadiya from your home screen.': '🔔 لتصلك التنبيهات على الآيفون: اضغط مشاركة، ثم «إضافة إلى الشاشة الرئيسية»، وافتح هدية من الشاشة الرئيسية.',
+  'This browser cannot receive notifications': 'هذا المتصفح لا يدعم الإشعارات', 'Notifications are not set up yet': 'الإشعارات غير مفعّلة بعد',
 
   /* shop-orders.html */
   'Shop Orders': 'طلبات المتجر', 'incoming orders': 'الطلبات الواردة', 'Manage shop orders': 'إدارة طلبات المتجر',
@@ -440,7 +452,126 @@ function renderNav(current) {
   if (langBtn) langBtn.addEventListener('click', () => setLanguage(IS_AR ? 'en' : 'ar'));
   const out = document.getElementById('navSignOut');
   if (out) out.addEventListener('click', logout);
-  if (loggedIn) startUnreadWatch();
+  if (loggedIn) { startUnreadWatch(); renderPushBar(); }
+}
+
+/* ---- Phone notifications ----
+   A small bar offers "Turn on notifications" once per person. Everything here is optional:
+   if the browser cannot do it, or the server has no keys yet, nothing is shown. */
+const PUSH_SUPPORTED = ('serviceWorker' in navigator) && typeof window.PushManager !== 'undefined' && typeof window.Notification !== 'undefined';
+let pushKeyCache = null;
+
+function base64UrlToBytes(text) {
+  const pad = '='.repeat((4 - (text.length % 4)) % 4);
+  const raw = atob((text + pad).replace(/-/g, '+').replace(/_/g, '/'));
+  return Uint8Array.from(raw, ch => ch.charCodeAt(0));
+}
+
+async function pushServerKey() {
+  if (pushKeyCache === null) {
+    try { const d = await api('/push/key'); pushKeyCache = d.enabled ? d.publicKey : ''; } catch (e) { return ''; }
+  }
+  return pushKeyCache;
+}
+
+async function registerPushOnServer(sub) {
+  await api('/push/subscribe', { method: 'POST', body: { subscription: sub.toJSON(), lang: getLang() } });
+}
+
+/* Called from a button tap (browsers require that to show the permission question) */
+async function enablePush() {
+  const permission = await Notification.requestPermission();
+  if (permission !== 'granted') throw new Error('Notifications are blocked in this browser. Allow them in the site settings and try again.');
+  const key = await pushServerKey();
+  if (!key) throw new Error('Notifications are not set up yet.');
+  const reg = await navigator.serviceWorker.ready;
+  let sub = await reg.pushManager.getSubscription();
+  if (!sub) sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(key) });
+  await registerPushOnServer(sub);
+}
+
+/* Already allowed earlier: quietly make sure this phone is registered for the signed-in person (once per visit) */
+async function syncPush() {
+  try {
+    if (sessionStorage.getItem('pushSynced')) return;
+    const reg = await navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    if (sub) { await registerPushOnServer(sub); sessionStorage.setItem('pushSynced', '1'); }
+    else {
+      const key = await pushServerKey();
+      if (!key) return;
+      await registerPushOnServer(await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: base64UrlToBytes(key) }));
+      sessionStorage.setItem('pushSynced', '1');
+    }
+  } catch (e) { /* optional feature: stay quiet */ }
+}
+
+async function disablePushOnThisDevice() {
+  try {
+    if (!PUSH_SUPPORTED || !getToken()) return;
+    const reg = await navigator.serviceWorker.getRegistration();
+    const sub = reg && await reg.pushManager.getSubscription();
+    if (!sub) return;
+    try { await api('/push/unsubscribe', { method: 'POST', body: { endpoint: sub.endpoint } }); } catch (e) {}
+    await sub.unsubscribe();
+    try { sessionStorage.removeItem('pushSynced'); } catch (e) {}
+  } catch (e) { /* ignore */ }
+}
+
+function pushBarDismissed() { try { return localStorage.getItem('pushDismissed') === '1'; } catch (e) { return false; } }
+
+async function renderPushBar() {
+  if (!getToken() || document.getElementById('pushBar')) return;
+  const header = document.querySelector('header.topbar');
+  if (!header) return;
+
+  let message = null, withButton = false;
+  if (PUSH_SUPPORTED) {
+    if (Notification.permission === 'granted') { syncPush(); return; }
+    if (Notification.permission === 'denied' || pushBarDismissed()) return;
+    if (!(await pushServerKey())) return;
+    message = '🔔 Get an alert on this phone when something new arrives, even when the app is closed.';
+    withButton = true;
+  } else {
+    // iPhone / iPad only allow notifications for apps added to the home screen
+    const ios = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const installed = (window.navigator.standalone === true) || (window.matchMedia && matchMedia('(display-mode: standalone)').matches);
+    if (!ios || installed || pushBarDismissed()) return;
+    message = '🔔 To get alerts on iPhone: tap Share, then "Add to Home Screen", and open Hadiya from your home screen.';
+  }
+
+  const bar = document.createElement('div');
+  bar.id = 'pushBar';
+  bar.className = 'notice push-bar';
+  const text = document.createElement('span');
+  text.textContent = message;
+  bar.appendChild(text);
+  const actions = document.createElement('span');
+  actions.className = 'push-actions';
+  if (withButton) {
+    const on = document.createElement('button');
+    on.type = 'button'; on.className = 'btn btn-sm'; on.textContent = 'Turn on notifications';
+    on.addEventListener('click', async () => {
+      on.disabled = true;
+      try {
+        await enablePush();
+        bar.className = 'notice ok push-bar';
+        text.textContent = 'Notifications are on ✓';
+        actions.remove();
+        setTimeout(() => bar.remove(), 3500);
+      } catch (e) {
+        text.textContent = e.message || 'Could not turn on notifications.';
+        on.disabled = false;
+      }
+    });
+    actions.appendChild(on);
+  }
+  const later = document.createElement('button');
+  later.type = 'button'; later.className = 'btn btn-sm btn-outline'; later.textContent = 'Not now';
+  later.addEventListener('click', () => { try { localStorage.setItem('pushDismissed', '1'); } catch (e) {} bar.remove(); });
+  actions.appendChild(later);
+  bar.appendChild(actions);
+  header.insertAdjacentElement('afterend', bar);
 }
 
 /* ---- Unread chat messages ----

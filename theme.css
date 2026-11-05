@@ -213,3 +213,7 @@ html[dir="rtl"] .nav, html[dir="rtl"] .topbar { direction: rtl; }
 body.arabic .status, body.arabic .order-status, body.arabic .msg .who { letter-spacing: 0; text-transform: none; }
 body.arabic .menu-row .m-name, body.arabic .shop-name, body.arabic .m-price, body.arabic .total { font-family: var(--arabic); }
 body.arabic .m-desc { font-style: normal; }
+
+/* ---------- notification offer bar ---------- */
+.push-bar { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; margin: 4px 0 12px; }
+.push-actions { display: inline-flex; gap: 8px; flex-wrap: wrap; }
