@@ -255,7 +255,8 @@
 
                 document.title = currentShop.name + ' - Hadiya';
                 $('shopTitle').textContent = currentShop.name;
-                $('shopDescription').textContent = currentShop.description || '';
+                $('shopDescription').textContent = (IS_AR && currentShop.descriptionAr) ? currentShop.descriptionAr : (currentShop.description || '');
+                $('shopDescription').setAttribute('data-notr', '');
                 renderPictures(currentShop);
                 loadReviews(shopId);
 

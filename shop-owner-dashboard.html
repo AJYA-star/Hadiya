@@ -76,7 +76,8 @@
             <p class="intro">Tell customers about your gift wrapping business. You can add your services right after.</p>
             <form class="grid" id="setupForm">
                 <div class="full"><label for="sName">Shop name</label><input id="sName" required maxlength="80"></div>
-                <div class="full"><label for="sDesc">Description</label><textarea id="sDesc" required maxlength="500"></textarea></div>
+                <div class="full"><label for="sDesc">Description (English)</label><textarea id="sDesc" required maxlength="500"></textarea></div>
+                <div class="full"><label for="sDescAr">Description (Arabic, optional)</label><textarea id="sDescAr" maxlength="500" dir="rtl" lang="ar" placeholder="اكتب وصف المتجر بالعربية"></textarea></div>
                 <div class="full"><label for="sEmail">Shop email</label><input id="sEmail" type="email" required></div>
                 <div><label for="sStreet">Street / area</label><input id="sStreet" required></div>
                 <div><label for="sCity">City</label><input id="sCity" required></div>
@@ -100,7 +101,8 @@
                 <p class="intro">This is what customers see. Change it here any time.</p>
                 <form class="grid" id="detailsForm">
                     <div class="full"><label for="eName">Shop name</label><input id="eName" required maxlength="80"></div>
-                    <div class="full"><label for="eDesc">Description</label><textarea id="eDesc" required maxlength="500"></textarea></div>
+                    <div class="full"><label for="eDesc">Description (English)</label><textarea id="eDesc" required maxlength="500"></textarea></div>
+                    <div class="full"><label for="eDescAr">Description (Arabic, optional)</label><textarea id="eDescAr" maxlength="500" dir="rtl" lang="ar" placeholder="اكتب وصف المتجر بالعربية"></textarea></div>
                     <div class="full"><label for="eEmail">Shop email</label><input id="eEmail" type="email" required></div>
                     <div><label for="eStreet">Street / area</label><input id="eStreet" required></div>
                     <div><label for="eCity">City</label><input id="eCity" required></div>
@@ -224,6 +226,7 @@
                     body: {
                         name: $('sName').value.trim(),
                         description: $('sDesc').value.trim(),
+                        descriptionAr: $('sDescAr').value.trim(),
                         email: $('sEmail').value.trim(),
                         address: { street: $('sStreet').value.trim(), city: $('sCity').value.trim() }
                     }
@@ -236,6 +239,7 @@
         function fillDetailsForm() {
             $('eName').value = shop.name || '';
             $('eDesc').value = shop.description || '';
+            $('eDescAr').value = shop.descriptionAr || '';
             $('eEmail').value = shop.email || '';
             $('eStreet').value = (shop.address && shop.address.street) || '';
             $('eCity').value = (shop.address && shop.address.city) || '';
@@ -253,6 +257,7 @@
                     body: {
                         name: $('eName').value.trim(),
                         description: $('eDesc').value.trim(),
+                        descriptionAr: $('eDescAr').value.trim(),
                         email: $('eEmail').value.trim(),
                         aiReplies: $('eAi').checked,
                         // keep the other address fields (country etc.) as they are
