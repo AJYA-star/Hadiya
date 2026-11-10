@@ -1,7 +1,7 @@
 {
   "name": "Hadiya - Gift Wrapping Marketplace",
   "short_name": "Hadiya",
-  "description": "Find and book gift wrapping services",
+  "description": "Gift wrapping made easy. Choose a wrapping shop, and it collects, wraps and delivers your gift back to you.",
   "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
