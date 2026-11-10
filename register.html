@@ -20,6 +20,7 @@
         .subtitle { margin: 6px 0 22px; text-align: center; color: var(--muted); }
         form label { margin-top: 15px; }
         select { margin-bottom: 4px; }
+        .shop-hint { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(94,22,36,.08); color: #5E1624; font-size: .9rem; line-height: 1.5; }
         button[type="submit"] { width: 100%; margin-top: 24px; }
         #message { display: none; margin-top: 18px; padding: 12px; border-radius: 12px; text-align: center; line-height: 1.4; font-weight: 700; }
         #message.success { display: block; background: #CFD8B2; color: #2F4A1A; }
@@ -36,7 +37,7 @@
   <main class="container">
     <a href="index.html" class="brand">
       <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 13h18"/><path d="M12 9c-1.5-3-5-3.5-5-1.5S10 9 12 9zM12 9c1.5-3 5-3.5 5-1.5S14 9 12 9z"/></svg></span>
-      <span class="brand-name">Hadiya</span>
+      <span class="brand-name" id="brandName">Hadiya</span>
     </a>
     <div class="top-row">
       <button type="button" id="languageButton" class="lang-btn">العربية</button>
@@ -92,6 +93,7 @@
         <option value="customer" id="roleCustomer">Wrap my gifts (customer)</option>
         <option value="shop_owner" id="roleShop">Offer wrapping services (shop owner)</option>
       </select>
+      <p class="shop-hint" id="shopHint" hidden></p>
 
       <button type="submit" class="btn" id="registerButton">
         Register
@@ -125,6 +127,7 @@
         roleLabel: "I want to",
         roleCustomer: "Wrap my gifts (customer)",
         roleShop: "Offer wrapping services (shop owner)",
+        shopHint: "Every shop is reviewed by Hadiya before it appears to customers. You can set up your shop right after registering, and we will notify you when it is approved.",
         registerButton: "Register",
         registeringButton: "Registering...",
         loginQuestion: "Already have an account?",
@@ -149,6 +152,7 @@
         roleLabel: "أريد أن",
         roleCustomer: "أغلّف هداياي (عميل)",
         roleShop: "أقدّم خدمات التغليف (صاحب متجر)",
+        shopHint: "تتم مراجعة كل متجر من قِبل هدية قبل ظهوره للعملاء. يمكنك تجهيز متجرك مباشرة بعد التسجيل، وسنُشعرك عند الموافقة عليه.",
         registerButton: "تسجيل",
         registeringButton: "جارٍ التسجيل...",
         loginQuestion: "لديك حساب بالفعل؟",
@@ -213,6 +217,8 @@
       document.getElementById("roleLabel").textContent = language.roleLabel;
       document.getElementById("roleCustomer").textContent = language.roleCustomer;
       document.getElementById("roleShop").textContent = language.roleShop;
+      document.getElementById("shopHint").textContent = language.shopHint;
+      document.getElementById("brandName").textContent = currentLanguage === "ar" ? "هدية" : "Hadiya";
 
       document.getElementById("loginQuestion").textContent =
         language.loginQuestion;
@@ -228,6 +234,10 @@
           language.registerButton;
       }
     }
+
+    document.getElementById("role").addEventListener("change", function () {
+      document.getElementById("shopHint").hidden = this.value !== "shop_owner";
+    });
 
     languageButton.addEventListener("click", function () {
       currentLanguage = currentLanguage === "en" ? "ar" : "en";

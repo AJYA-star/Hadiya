@@ -54,6 +54,9 @@
         .order-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
         .empty { text-align: center; padding: 24px; color: var(--muted); font-weight: 700; }
 
+        #setupCard label:has(+ [required])::after { content: " *"; color: #5E1624; }
+        .next-steps { margin: 0 0 18px; padding: 12px 14px 12px 30px; border-radius: 12px; background: rgba(94,22,36,.07); font-size: .92rem; line-height: 1.7; }
+        body.arabic .next-steps { padding: 12px 30px 12px 14px; }
     </style>
 </head>
 <body>
@@ -81,6 +84,11 @@
         <section class="card" id="setupCard" hidden>
             <h2>Set up your shop</h2>
             <p class="intro">Tell customers about your gift wrapping business. You can add your services right after.</p>
+            <ol class="next-steps">
+                <li>Create your shop (fields marked * are required).</li>
+                <li>Add your services, photos and opening hours.</li>
+                <li>Hadiya reviews your shop and approves it. Then customers can see it.</li>
+            </ol>
             <form class="grid" id="setupForm">
                 <div class="full"><label for="sName">Shop name (English)</label><input id="sName" required maxlength="80"></div>
                 <div class="full"><label for="sNameAr">Shop name (Arabic, optional)</label><input id="sNameAr" maxlength="80" dir="rtl" lang="ar" placeholder="مثال: بهجة"></div>
@@ -95,7 +103,7 @@
 
         <!-- Step 2: dashboard -->
         <div id="dashboard" hidden>
-            <div class="notice warn" id="verifyNotice" hidden>Your shop is waiting for approval and is not visible to customers yet.</div>
+            <div class="notice warn" id="verifyNotice" hidden>Your shop is waiting for approval and is not visible to customers yet. Meanwhile, add your services, photos and opening hours. We will notify you when it is approved.</div>
             <div class="notice warn unread-banner" id="unreadBanner" hidden></div>
 
             <div class="stats-grid">
@@ -115,7 +123,7 @@
                     <div class="full"><label for="eEmail">Shop email</label><input id="eEmail" type="email" required></div>
                     <div><label for="eStreet">Street / area</label><input id="eStreet" required></div>
                     <div><label for="eCity">City</label><input id="eCity" required></div>
-                    <div class="full">
+                    <div class="full" hidden>
                         <label class="check"><input type="checkbox" id="eAi">
                             <span>Let the <strong>Hadiya Assistant</strong> answer customers first (it is always labelled as automatic, and stops as soon as you write in a chat).</span>
                         </label>
