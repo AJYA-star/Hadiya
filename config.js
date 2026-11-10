@@ -199,7 +199,7 @@ const AR = {
   'Let the': 'دع', 'Hadiya Assistant': 'مساعد هدية',
   'answer customers first (it is always labelled as automatic, and stops as soon as you write in a chat)': 'يردّ على العملاء أولاً (يُوضَّح دائماً أنه آلي، ويتوقف فور كتابتك في المحادثة)',
   'Your services': 'خدماتك', 'Service name': 'اسم الخدمة', 'Price (AED)': 'السعر (درهم)', 'Description (optional)': 'الوصف (اختياري)',
-  'Working hours': 'ساعات العمل', 'Opening hours': 'ساعات العمل',
+  'Approvals': 'الموافقات', 'Working hours': 'ساعات العمل', 'Opening hours': 'ساعات العمل',
   'Customers see when you are open. Tick Closed for your days off': 'يرى العملاء متى تكون متاحاً. ضع علامة على «مغلق» في أيام إجازتك',
   'Monday': 'الاثنين', 'Tuesday': 'الثلاثاء', 'Wednesday': 'الأربعاء', 'Thursday': 'الخميس', 'Friday': 'الجمعة', 'Saturday': 'السبت', 'Sunday': 'الأحد',
   'Closed': 'مغلق', 'Open now': 'مفتوح الآن', 'Closed now': 'مغلق الآن', 'Save hours': 'حفظ الساعات', 'Copy Monday to all days': 'نسخ ساعات الاثنين لكل الأيام',
@@ -443,6 +443,7 @@ function renderNav(current) {
   if (isOwner) {
     links.push(['shop-owner-dashboard.html', 'Dashboard']);
     links.push(['shop-orders.html', 'Shop orders']);
+    if (user.role === 'admin') links.push(['admin.html', 'Approvals']);
   } else {
     links.push(['shops.html', 'Browse shops']);
     links.push(['my-orders.html', 'My orders']);

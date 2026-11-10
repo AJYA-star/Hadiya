@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en" data-own-lang>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#5E1624">
+    <title>Shop Approvals - Hadiya</title>
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192.png">
+    <link rel="apple-touch-icon" href="icon-192.png">
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@600;700&family=Caveat:wght@500;700&family=Nunito+Sans:wght@400;600;700&family=Noto+Kufi+Arabic:wght@400;600;700&family=Italiana&family=Gulzar&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="theme.css">
+    <style>
+        .tabs { display: flex; gap: 10px; flex-wrap: wrap; margin: 6px 0 18px; }
+        .tab { border: 1px solid var(--line); background: var(--card); color: var(--ink-2); border-radius: 999px; padding: 9px 18px; font: inherit; font-weight: 700; cursor: pointer; }
+        .tab.on { background: var(--wine); border-color: var(--wine); color: var(--on-wine); }
+        .shop-row { margin-bottom: 16px; }
+        .shop-row h2 { font-size: 1.6rem; margin: 0; color: var(--head); overflow-wrap: anywhere; }
+        .row-top { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+        .facts { margin: 10px 0 0; display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 4px 12px; font-size: 0.92rem; }
+        .facts dt { color: var(--muted); font-weight: 700; }
+        .facts dd { margin: 0; color: var(--ink-2); overflow-wrap: anywhere; }
+        .desc { margin-top: 10px; color: var(--ink-2); line-height: 1.6; overflow-wrap: anywhere; }
+        .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+        .empty-state { background: var(--card); border: 1px dashed var(--line); border-radius: 18px; padding: 30px; text-align: center; color: var(--muted); font-weight: 700; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        @media (max-width: 520px) { .facts { grid-template-columns: 1fr; } .facts dt { margin-top: 6px; } }
+    </style>
+</head>
+<body>
+    <div class="awning"></div>
+    <div class="wrap">
+        <header class="topbar">
+            <a href="index.html" class="brand">
+                <span class="brand-mark"><svg viewBox="0 0 24 24" fill="none" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 13h18"/><path d="M12 9c-1.5-3-5-3.5-5-1.5S10 9 12 9zM12 9c1.5-3 5-3.5 5-1.5S14 9 12 9z"/></svg></span>
+                <span class="brand-name">Hadiya</span>
+            </a>
+            <nav class="nav" id="siteNav"></nav>
+        </header>
+
+        <main style="max-width:1000px">
+            <div class="page-head">
+                <div class="script">for the Hadiya team</div>
+                <h1>Shop approvals</h1>
+                <p>Check each new shop, call the owner if you need to, then approve it. Customers only see approved shops.</p>
+            </div>
+
+            <div id="message" class="message info" role="status" aria-live="polite" hidden></div>
+
+            <div class="tabs" id="tabs" role="tablist" hidden>
+                <button type="button" class="tab on" data-tab="waiting">Waiting <span id="cWaiting"></span></button>
+                <button type="button" class="tab" data-tab="approved">Approved <span id="cApproved"></span></button>
+                <button type="button" class="tab" data-tab="all">All <span id="cAll"></span></button>
+            </div>
+
+            <div id="list" aria-busy="false">Loading shops...</div>
+        </main>
+    </div>
+
+    <div class="trees" aria-hidden="true"></div>
+    <footer class="site-footer">
+        <div class="wrap">
+            <span class="brand-name">Hadiya</span>
+            <span>Gift wrapping, picked up and delivered back.</span>
+        </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>renderNav('admin.html');</script>
+    <script>
+        'use strict';
+        const $ = id => document.getElementById(id);
+        let shops = [];
+        let tab = 'waiting';
+
+        function showMessage(text, type) {
+            const box = $('message');
+            box.textContent = text || '';
+            box.className = 'message ' + (type || 'info');
+            box.hidden = !text;
+        }
+
+        function fmtDate(v) {
+            const d = new Date(v);
+            return isNaN(d) ? '' : d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function render() {
+            const waiting = shops.filter(s => !s.isVerified);
+            const approved = shops.filter(s => s.isVerified);
+            $('cWaiting').textContent = '(' + waiting.length + ')';
+            $('cApproved').textContent = '(' + approved.length + ')';
+            $('cAll').textContent = '(' + shops.length + ')';
+            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+
+            const shown = tab === 'waiting' ? waiting : tab === 'approved' ? approved : shops;
+            if (!shown.length) {
+                $('list').innerHTML = '<div class="empty-state">' +
+                    (tab === 'waiting' ? 'No shops are waiting for approval.' : 'Nothing to show here yet.') + '</div>';
+                return;
+            }
+            $('list').innerHTML = shown.map(s => {
+                const o = s.owner || {};
+                const a = s.address || {};
+                const services = (s.services || []).map(v => esc(v.name) + ' (AED ' + esc(v.price) + ')').join(', ') || 'None yet';
+                return `<article class="card shop-row">
+                    <div class="row-top">
+                        <h2>${esc(s.name)}${s.nameAr ? ' · ' + esc(s.nameAr) : ''}</h2>
+                        <span class="status ${s.isVerified ? 'st-completed' : 'st-pending'}">${s.isVerified ? 'Approved' : 'Waiting'}</span>
+                    </div>
+                    <dl class="facts">
+                        <dt>Owner</dt><dd>${esc(o.name || 'Unknown')}</dd>
+                        <dt>Phone</dt><dd>${o.phone ? '<a href="tel:' + esc(o.phone) + '">' + esc(o.phone) + '</a>' : '-'}</dd>
+                        <dt>Email</dt><dd>${esc(o.email || s.email || '-')}</dd>
+                        <dt>Area</dt><dd>${esc([a.street, a.city].filter(Boolean).join(', ') || '-')}</dd>
+                        <dt>Services</dt><dd>${services}</dd>
+                        <dt>Joined</dt><dd>${esc(fmtDate(s.createdAt))}</dd>
+                    </dl>
+                    <p class="desc">${esc(s.description || '')}</p>
+                    <div class="actions-row">
+                        ${s.isVerified
+                            ? `<button type="button" class="btn btn-outline btn-sm" data-act="unapprove" data-id="${esc(s._id)}">Remove approval</button>`
+                            : `<button type="button" class="btn btn-sm" data-act="approve" data-id="${esc(s._id)}">Approve shop</button>`}
+                    </div>
+                </article>`;
+            }).join('');
+        }
+
+        async function setApproval(id, approve, btn) {
+            const shop = shops.find(s => s._id === id);
+            const name = shop ? shop.name : 'this shop';
+            const question = approve
+                ? 'Approve "' + name + '"? Customers will be able to see it and book it.'
+                : 'Remove approval from "' + name + '"? Customers will no longer see it.';
+            if (!confirm(question)) return;
+            btn.disabled = true;
+            showMessage('');
+            try {
+                await api('/shops/' + encodeURIComponent(id) + '/verify', { method: 'PUT', body: { isVerified: approve } });
+                if (shop) shop.isVerified = approve;
+                render();
+                showMessage(approve ? '"' + name + '" is approved. The owner gets a phone alert.' : '"' + name + '" is no longer visible to customers.', 'success');
+            } catch (err) {
+                btn.disabled = false;
+                showMessage(err.message || 'Something went wrong. Please try again.', 'error');
+            }
+        }
+
+        $('tabs').addEventListener('click', e => {
+            const t = e.target.closest('.tab');
+            if (t) { tab = t.dataset.tab; render(); }
+        });
+        $('list').addEventListener('click', e => {
+            const b = e.target.closest('button[data-act]');
+            if (b) setApproval(b.dataset.id, b.dataset.act === 'approve', b);
+        });
+
+        async function init() {
+            if (!getToken()) { window.location.href = 'login.html?next=admin.html'; return; }
+            const user = getUser();
+            if (!user || user.role !== 'admin') {
+                $('list').innerHTML = '<div class="empty-state">This page is only for the Hadiya admin account.</div>';
+                return;
+            }
+            try {
+                const data = await api('/shops/admin/all');
+                shops = data.shops || [];
+                $('tabs').hidden = false;
+                // start on the tab that needs attention
+                tab = shops.some(s => !s.isVerified) ? 'waiting' : 'all';
+                render();
+            } catch (err) {
+                if (err.status === 401) { window.location.href = 'login.html?next=admin.html'; return; }
+                $('list').innerHTML = '';
+                showMessage(err.message || 'Could not load the shops.', 'error');
+            }
+        }
+        init();
+    </script>
+</body>
+</html>
