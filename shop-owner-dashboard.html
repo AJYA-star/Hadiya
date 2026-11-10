@@ -39,6 +39,13 @@
         .service-row .name { font-family: var(--serif); font-size: 1.4rem; font-weight: 700; color: var(--head); }
         .service-row .desc { font-size: 0.85rem; color: var(--muted); font-style: italic; }
         .price { font-family: var(--script); font-size: 1.7rem; color: var(--wine); font-weight: 700; white-space: nowrap; }
+        .hours-row { display: grid; grid-template-columns: 110px 1fr 1fr auto; gap: 8px 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
+        .hours-row:last-child { border-bottom: 0; }
+        .hours-row .day { font-weight: 700; color: var(--head); }
+        .hours-row input[type=time] { width: 100%; }
+        .hours-row.off input[type=time] { opacity: .35; }
+        .hours-row label.check { margin: 0; white-space: nowrap; font-size: 0.9rem; }
+        @media (max-width: 560px) { .hours-row { grid-template-columns: 1fr 1fr; } .hours-row .day { grid-column: 1 / -1; } }
         .link-danger { background: none; border: 0; color: var(--wine); cursor: pointer; font: inherit; font-size: 0.85rem; font-weight: 700; text-decoration: underline; }
 
         .order-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; flex-wrap: wrap; }
@@ -113,6 +120,16 @@
                     </div>
                     <div class="full"><button class="btn" type="submit" id="detailsBtn">Save changes</button></div>
                 </form>
+            </section>
+
+            <section class="card">
+                <h2>Working hours</h2>
+                <p class="intro">Customers see when you are open. Tick Closed for your days off.</p>
+                <div id="hoursGrid"></div>
+                <div class="actions" style="margin-top:14px;">
+                    <button type="button" class="btn" id="hoursSave">Save hours</button>
+                    <button type="button" class="btn btn-outline" id="hoursCopy">Copy Monday to all days</button>
+                </div>
             </section>
 
             <section class="card">
@@ -203,6 +220,7 @@
                 $('shopSubtitle').textContent = shop.name;
                 $('verifyNotice').hidden = shop.isVerified !== false;
                 fillDetailsForm();
+                renderHours();
                 renderPictures();
                 renderServices();
                 await loadOrders();
@@ -274,6 +292,59 @@
                 fillDetailsForm();
                 showMessage('Saved. Your shop details are updated.', 'ok');
                 $('message').scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } catch (err) { handleError(err); }
+            btn.disabled = false;
+        });
+
+        /* ---- working hours ---- */
+        const DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const DAY_NAMES = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday' };
+
+        function renderHours() {
+            const saved = (shop && shop.workingHours) || {};
+            $('hoursGrid').innerHTML = DAYS.map(d => {
+                const h = saved[d] || {};
+                const closed = h.isClosed === true;
+                return `<div class="hours-row${closed ? ' off' : ''}" data-day="${d}">
+                    <span class="day">${DAY_NAMES[d]}</span>
+                    <input type="time" class="h-open" value="${esc(h.open || '09:00')}" aria-label="Open">
+                    <input type="time" class="h-close" value="${esc(h.close || '21:00')}" aria-label="Close">
+                    <label class="check"><input type="checkbox" class="h-closed"${closed ? ' checked' : ''}><span>Closed</span></label>
+                </div>`;
+            }).join('');
+            document.querySelectorAll('#hoursGrid .h-closed').forEach(cb =>
+                cb.addEventListener('change', () => cb.closest('.hours-row').classList.toggle('off', cb.checked)));
+        }
+
+        $('hoursCopy').addEventListener('click', () => {
+            const first = document.querySelector('#hoursGrid .hours-row');
+            const o = first.querySelector('.h-open').value, c = first.querySelector('.h-close').value;
+            const off = first.querySelector('.h-closed').checked;
+            document.querySelectorAll('#hoursGrid .hours-row').forEach(row => {
+                row.querySelector('.h-open').value = o;
+                row.querySelector('.h-close').value = c;
+                row.querySelector('.h-closed').checked = off;
+                row.classList.toggle('off', off);
+            });
+        });
+
+        $('hoursSave').addEventListener('click', async () => {
+            const btn = $('hoursSave');
+            const hours = {};
+            document.querySelectorAll('#hoursGrid .hours-row').forEach(row => {
+                hours[row.dataset.day] = {
+                    open: row.querySelector('.h-open').value,
+                    close: row.querySelector('.h-close').value,
+                    isClosed: row.querySelector('.h-closed').checked
+                };
+            });
+            btn.disabled = true;
+            showMessage('');
+            try {
+                const data = await api('/shops/' + encodeURIComponent(shop._id), { method: 'PUT', body: { workingHours: hours } });
+                shop = data.shop;
+                renderHours();
+                note('Saved. Your working hours are updated.', 'ok');
             } catch (err) { handleError(err); }
             btn.disabled = false;
         });

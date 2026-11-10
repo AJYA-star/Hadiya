@@ -58,6 +58,13 @@
         .invalid { border-color: var(--wine) !important; box-shadow: 0 0 0 4px rgba(94, 22, 36, 0.18) !important; }
         .note { font-size: 0.8rem; color: var(--muted); margin-top: 4px; }
 
+        .hours-box { margin-top: 22px; padding-top: 18px; border-top: 1px dashed var(--line); }
+        .hours-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+        .open-badge { font-size: 0.8rem; font-weight: 700; padding: 3px 12px; border-radius: 999px; }
+        .open-badge.on { background: #DDE8C8; color: #3E5A1E; }
+        .open-badge.off { background: #F0D4D4; color: #8C2B3D; }
+        .hours-line { display: flex; justify-content: space-between; gap: 14px; padding: 5px 0; color: var(--ink-2); max-width: 360px; }
+        .hours-line.today { font-weight: 700; color: var(--head); }
     </style>
 </head>
 <body>
@@ -90,6 +97,11 @@
 
             <div class="contact-info">
                 <p id="shopAddress"></p>
+            </div>
+
+            <div class="hours-box" id="hoursBox" hidden>
+                <div class="hours-head"><span class="script">Opening hours</span><span class="open-badge" id="openBadge" hidden></span></div>
+                <div id="hoursList" data-notr></div>
             </div>
         </div>
     </div>
@@ -267,6 +279,7 @@
                 // Arabic text typed by the owner is used when the visitor reads in Arabic
                 const svcName = s => (IS_AR && s.nameAr) ? s.nameAr : s.name;
                 const svcDesc = s => (IS_AR && s.descriptionAr) ? s.descriptionAr : s.description;
+                renderHours(currentShop.workingHours);
                 const services = (currentShop.services || []).filter(s => s.isAvailable !== false);
                 if (services.length === 0) {
                     $('servicesList').innerHTML = '<p class="error">This shop has not added any services yet.</p>';
@@ -289,6 +302,57 @@
             } catch (err) {
                 console.error('Error fetching shop:', err);
                 showShopError(err.message);
+            }
+        }
+
+        /* Opening hours: shown only if the shop has set them. "Open now" uses UAE time. */
+        const HOUR_DAYS = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+        const DAYS_EN = { monday: 'Monday', tuesday: 'Tuesday', wednesday: 'Wednesday', thursday: 'Thursday', friday: 'Friday', saturday: 'Saturday', sunday: 'Sunday' };
+        const DAYS_AR = { monday: 'الاثنين', tuesday: 'الثلاثاء', wednesday: 'الأربعاء', thursday: 'الخميس', friday: 'الجمعة', saturday: 'السبت', sunday: 'الأحد' };
+        function fmtTime(t) {
+            const m = /^(\d{1,2}):(\d{2})$/.exec(t || '');
+            if (!m) return t || '';
+            return new Date(2000, 0, 1, +m[1], +m[2]).toLocaleTimeString(LOC || 'en-US', { hour: 'numeric', minute: '2-digit' });
+        }
+        const toMin = t => { const m = /^(\d{1,2}):(\d{2})$/.exec(t || ''); return m ? (+m[1]) * 60 + (+m[2]) : null; };
+        function renderHours(wh) {
+            wh = wh || {};
+            const set = HOUR_DAYS.filter(d => wh[d] && (wh[d].isClosed === true || (wh[d].open && wh[d].close)));
+            if (!set.length) return;
+            let today = null, nowMin = null;
+            try {
+                const parts = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Dubai', weekday: 'long', hour: '2-digit', minute: '2-digit', hour12: false }).formatToParts(new Date());
+                const get = type => (parts.find(p => p.type === type) || {}).value;
+                today = String(get('weekday')).toLowerCase();
+                nowMin = (+get('hour') % 24) * 60 + (+get('minute'));
+            } catch (e) {}
+            $('hoursList').innerHTML = HOUR_DAYS.map(d => {
+                const h = wh[d];
+                const label = (IS_AR ? DAYS_AR : DAYS_EN)[d];
+                const text = !h || (!h.isClosed && !(h.open && h.close)) ? '–'
+                    : h.isClosed ? (IS_AR ? 'مغلق' : 'Closed')
+                    : fmtTime(h.open) + ' – ' + fmtTime(h.close);
+                return `<div class="hours-line${d === today ? ' today' : ''}"><span>${label}</span><span>${text}</span></div>`;
+            }).join('');
+            $('hoursBox').hidden = false;
+            // open now? (also counts hours that run past midnight from yesterday)
+            if (today && nowMin !== null) {
+                const ok = h => h && !h.isClosed && toMin(h.open) !== null && toMin(h.close) !== null;
+                const h = wh[today];
+                const y = wh[HOUR_DAYS[(HOUR_DAYS.indexOf(today) + 6) % 7]];
+                let open = false;
+                if (ok(h)) {
+                    const o = toMin(h.open), c = toMin(h.close);
+                    open = c > o ? (nowMin >= o && nowMin < c) : (nowMin >= o);
+                }
+                if (!open && ok(y)) {
+                    const o = toMin(y.open), c = toMin(y.close);
+                    if (c <= o && nowMin < c) open = true;
+                }
+                const b = $('openBadge');
+                b.textContent = open ? 'Open now' : 'Closed now';
+                b.className = 'open-badge ' + (open ? 'on' : 'off');
+                b.hidden = false;
             }
         }
 
