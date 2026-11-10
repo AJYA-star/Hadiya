@@ -179,7 +179,7 @@
             const data = await api('/orders/' + encodeURIComponent(orderId));
             const o = data.order;
             const isShop = side === 'shop';
-            const otherName = isShop ? (o.customer && o.customer.name) : (o.shop && o.shop.name);
+            const otherName = isShop ? (o.customer && o.customer.name) : (o.shop && shopName(o.shop));
             $('chatTitle').textContent = 'Chat with ' + (otherName || (isShop ? 'the customer' : 'the shop'));
             $('chatSub').textContent = (o.service && o.service.name) || '';
             $('chatStatus').textContent = ORDER_STATUS_LABELS[o.status] || o.status;

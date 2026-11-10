@@ -123,7 +123,7 @@
                 <div class="shop-card" onclick="goToShopDetail('${esc(shop._id)}')">
                     <div class="cover">${picture}${hasLogo ? `<div class="shop-logo" style="background-image: url('${esc(shop.logo)}')"></div>` : ''}</div>
                     <div class="shop-info${hasLogo ? ' has-logo' : ''}">
-                        <div class="shop-name">${esc(shop.name)}</div>
+                        <div class="shop-name">${esc(shopName(shop))}</div>
                         <div class="shop-location">${city ? esc(city) : ''}</div>
                         <div class="shop-rating">
                             <span class="star">★</span> ${esc(rating)}
@@ -139,6 +139,7 @@
             const term = document.getElementById('searchInput').value.toLowerCase();
             displayShops(allShops.filter(shop =>
                 (shop.name || '').toLowerCase().includes(term) ||
+                (shop.nameAr || '').toLowerCase().includes(term) ||
                 ((shop.address && shop.address.city) || '').toLowerCase().includes(term)
             ));
         }

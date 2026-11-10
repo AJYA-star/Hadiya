@@ -82,7 +82,8 @@
             <h2>Set up your shop</h2>
             <p class="intro">Tell customers about your gift wrapping business. You can add your services right after.</p>
             <form class="grid" id="setupForm">
-                <div class="full"><label for="sName">Shop name</label><input id="sName" required maxlength="80"></div>
+                <div class="full"><label for="sName">Shop name (English)</label><input id="sName" required maxlength="80"></div>
+                <div class="full"><label for="sNameAr">Shop name (Arabic, optional)</label><input id="sNameAr" maxlength="80" dir="rtl" lang="ar" placeholder="مثال: بهجة"></div>
                 <div class="full"><label for="sDesc">Description (English)</label><textarea id="sDesc" required maxlength="500"></textarea></div>
                 <div class="full"><label for="sDescAr">Description (Arabic, optional)</label><textarea id="sDescAr" maxlength="500" dir="rtl" lang="ar" placeholder="اكتب وصف المتجر بالعربية"></textarea></div>
                 <div class="full"><label for="sEmail">Shop email</label><input id="sEmail" type="email" required></div>
@@ -107,7 +108,8 @@
                 <h2>Shop details</h2>
                 <p class="intro">This is what customers see. Change it here any time.</p>
                 <form class="grid" id="detailsForm">
-                    <div class="full"><label for="eName">Shop name</label><input id="eName" required maxlength="80"></div>
+                    <div class="full"><label for="eName">Shop name (English)</label><input id="eName" required maxlength="80"></div>
+                    <div class="full"><label for="eNameAr">Shop name (Arabic, optional)</label><input id="eNameAr" maxlength="80" dir="rtl" lang="ar" placeholder="مثال: بهجة"></div>
                     <div class="full"><label for="eDesc">Description (English)</label><textarea id="eDesc" required maxlength="500"></textarea></div>
                     <div class="full"><label for="eDescAr">Description (Arabic, optional)</label><textarea id="eDescAr" maxlength="500" dir="rtl" lang="ar" placeholder="اكتب وصف المتجر بالعربية"></textarea></div>
                     <div class="full"><label for="eEmail">Shop email</label><input id="eEmail" type="email" required></div>
@@ -245,6 +247,7 @@
                     method: 'POST',
                     body: {
                         name: $('sName').value.trim(),
+                        nameAr: $('sNameAr').value.trim(),
                         description: $('sDesc').value.trim(),
                         descriptionAr: $('sDescAr').value.trim(),
                         email: $('sEmail').value.trim(),
@@ -258,6 +261,7 @@
 
         function fillDetailsForm() {
             $('eName').value = shop.name || '';
+            $('eNameAr').value = shop.nameAr || '';
             $('eDesc').value = shop.description || '';
             $('eDescAr').value = shop.descriptionAr || '';
             $('eEmail').value = shop.email || '';
@@ -276,6 +280,7 @@
                     method: 'PUT',
                     body: {
                         name: $('eName').value.trim(),
+                        nameAr: $('eNameAr').value.trim(),
                         description: $('eDesc').value.trim(),
                         descriptionAr: $('eDescAr').value.trim(),
                         email: $('eEmail').value.trim(),

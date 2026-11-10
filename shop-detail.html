@@ -266,8 +266,8 @@
                 const data = await api('/shops/' + encodeURIComponent(shopId));
                 currentShop = data.shop;
 
-                document.title = currentShop.name + ' - Hadiya';
-                $('shopTitle').textContent = currentShop.name;
+                document.title = shopName(currentShop) + ' - Hadiya';
+                $('shopTitle').textContent = shopName(currentShop);
                 $('shopDescription').textContent = (IS_AR && currentShop.descriptionAr) ? currentShop.descriptionAr : (currentShop.description || '');
                 $('shopDescription').setAttribute('data-notr', '');
                 renderPictures(currentShop);
@@ -371,7 +371,7 @@
             selectedService = (currentShop.services || []).find(s => s._id === serviceId);
             if (!selectedService) return;
 
-            $('bookingSummary').textContent = ((IS_AR && selectedService.nameAr) ? selectedService.nameAr : selectedService.name) + (IS_AR ? ' لدى ' : ' at ') + currentShop.name;
+            $('bookingSummary').textContent = ((IS_AR && selectedService.nameAr) ? selectedService.nameAr : selectedService.name) + (IS_AR ? ' لدى ' : ' at ') + shopName(currentShop);
             $('tService').textContent = 'AED ' + selectedService.price;
             $('contactPhone').value = (user && user.phone) || '';
             $('formError').textContent = '';

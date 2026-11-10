@@ -124,6 +124,8 @@ function getLang() {
 const LANG = getLang();
 /* home / login / register run their own language switch, so they opt out with data-own-lang */
 const IS_AR = LANG === 'ar' && !document.documentElement.hasAttribute('data-own-lang');
+// A shop's name in the visitor's language (the Arabic name is optional; falls back to the main name)
+function shopName(s) { return s ? ((IS_AR && s.nameAr) ? s.nameAr : (s.name || '')) : ''; }
 
 const AR = {
   /* menu + footer + shared */
@@ -202,6 +204,7 @@ const AR = {
   'Monday': 'الاثنين', 'Tuesday': 'الثلاثاء', 'Wednesday': 'الأربعاء', 'Thursday': 'الخميس', 'Friday': 'الجمعة', 'Saturday': 'السبت', 'Sunday': 'الأحد',
   'Closed': 'مغلق', 'Open now': 'مفتوح الآن', 'Closed now': 'مغلق الآن', 'Save hours': 'حفظ الساعات', 'Copy Monday to all days': 'نسخ ساعات الاثنين لكل الأيام',
   'Saved. Your working hours are updated': 'تم الحفظ. تم تحديث ساعات عملك',
+  'Shop name (English)': 'اسم المتجر (بالإنجليزية)', 'Shop name (Arabic, optional)': 'اسم المتجر (بالعربية، اختياري)',
   'Add service': 'إضافة خدمة', 'Orders': 'الطلبات', 'e.g. Premium wrapping': 'مثال: تغليف فاخر',
   'Description (English)': 'الوصف (بالإنجليزية)', 'Description (Arabic, optional)': 'الوصف (بالعربية، اختياري)',
   'Service name (English)': 'اسم الخدمة (بالإنجليزية)', 'Service name (Arabic, optional)': 'اسم الخدمة (بالعربية، اختياري)',

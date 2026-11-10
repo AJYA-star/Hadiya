@@ -139,7 +139,7 @@
                         <span class="order-id">#${esc(order.orderNumber)}</span>
                         <span class="status status-${esc(status)}">${esc(label)}</span>
                     </div>
-                    <div class="shop-name">${esc(order.shop ? order.shop.name : 'Unknown Shop')}</div>
+                    <div class="shop-name">${esc(order.shop ? shopName(order.shop) : 'Unknown Shop')}</div>
                     <div class="service-name">${esc(order.service ? order.service.name : '')}</div>
                     <div class="meta">📥 ${esc(pickupText)}</div>
                     <div class="meta">📤 ${esc(deliveryText)}</div>
