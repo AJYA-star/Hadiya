@@ -263,6 +263,9 @@
                 const a = currentShop.address || {};
                 $('shopAddress').textContent = '📍 ' + [a.street, a.city].filter(Boolean).join(', ');
 
+                // Arabic text typed by the owner is used when the visitor reads in Arabic
+                const svcName = s => (IS_AR && s.nameAr) ? s.nameAr : s.name;
+                const svcDesc = s => (IS_AR && s.descriptionAr) ? s.descriptionAr : s.description;
                 const services = (currentShop.services || []).filter(s => s.isAvailable !== false);
                 if (services.length === 0) {
                     $('servicesList').innerHTML = '<p class="error">This shop has not added any services yet.</p>';
@@ -272,8 +275,8 @@
                 $('servicesList').innerHTML = services.map(ser => `
                     <div class="menu-row">
                         <div>
-                            <div class="m-name">${esc(ser.name)}</div>
-                            <div class="m-desc">${esc(ser.description || 'Professional wrapping')}</div>
+                            <div class="m-name" ${IS_AR && ser.nameAr ? 'data-notr' : ''}>${esc(svcName(ser))}</div>
+                            <div class="m-desc" ${IS_AR && ser.descriptionAr ? 'data-notr' : ''}>${esc(svcDesc(ser) || 'Professional wrapping')}</div>
                         </div>
                         <div class="m-dots"></div>
                         <div class="m-price">AED ${esc(ser.price)}</div>
@@ -303,7 +306,7 @@
             selectedService = (currentShop.services || []).find(s => s._id === serviceId);
             if (!selectedService) return;
 
-            $('bookingSummary').textContent = selectedService.name + (IS_AR ? ' لدى ' : ' at ') + currentShop.name;
+            $('bookingSummary').textContent = ((IS_AR && selectedService.nameAr) ? selectedService.nameAr : selectedService.name) + (IS_AR ? ' لدى ' : ' at ') + currentShop.name;
             $('tService').textContent = 'AED ' + selectedService.price;
             $('contactPhone').value = (user && user.phone) || '';
             $('formError').textContent = '';

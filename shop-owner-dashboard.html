@@ -133,10 +133,12 @@
                 <h2>Your services</h2>
                 <div id="servicesList"></div>
                 <form class="grid" id="serviceForm" style="margin-top:14px;">
-                    <div><label for="svName">Service name</label><input id="svName" required maxlength="80" placeholder="e.g. Premium wrapping"></div>
-                    <div><label for="svPrice">Price (AED)</label><input id="svPrice" type="number" min="0" step="0.5" required></div>
-                    <div class="full"><label for="svDesc">Description (optional)</label><input id="svDesc" maxlength="200"></div>
-                    <div class="full"><button class="btn" type="submit">Add service</button></div>
+                    <div><label for="svName">Service name (English)</label><input id="svName" required maxlength="80" placeholder="e.g. Premium wrapping"></div>
+                    <div><label for="svNameAr">Service name (Arabic, optional)</label><input id="svNameAr" maxlength="80" dir="rtl" lang="ar" placeholder="مثال: تغليف فاخر"></div>
+                    <div class="full"><label for="svPrice">Price (AED)</label><input id="svPrice" type="number" min="0" step="0.5" required></div>
+                    <div><label for="svDesc">Description (English, optional)</label><input id="svDesc" maxlength="200"></div>
+                    <div><label for="svDescAr">Description (Arabic, optional)</label><input id="svDescAr" maxlength="200" dir="rtl" lang="ar"></div>
+                    <div class="full"><button class="btn" type="submit" id="svBtn">Add service</button> <button class="link-danger" type="button" id="svCancel" hidden>Cancel editing</button></div>
                 </form>
             </section>
 
@@ -363,30 +365,62 @@
             $('servicesList').innerHTML = services.length
                 ? services.map(s => `
                     <div class="service-row">
-                        <div><div class="name">${esc(s.name)}</div><div class="desc">${esc(s.description || '')}</div></div>
+                        <div><div class="name" data-notr>${esc(s.name)}</div><div class="desc" data-notr>${esc(s.description || '')}</div>
+                        ${s.nameAr ? `<div class="desc" data-notr dir="rtl">${esc(s.nameAr)}</div>` : ''}</div>
                         <div><span class="price">AED ${esc(s.price)}</span>
+                        <button type="button" class="link-danger edit-sv" data-id="${esc(s._id)}">Edit</button>
                         <button type="button" class="link-danger" data-id="${esc(s._id)}">Remove</button></div>
                     </div>`).join('')
                 : '<div class="empty">No services yet. Add your first one below so customers can book you.</div>';
 
-            document.querySelectorAll('#servicesList .link-danger').forEach(btn =>
+            document.querySelectorAll('#servicesList .link-danger:not(.edit-sv)').forEach(btn =>
                 btn.addEventListener('click', () => removeService(btn.dataset.id)));
+            document.querySelectorAll('#servicesList .edit-sv').forEach(btn =>
+                btn.addEventListener('click', () => startEditService(btn.dataset.id)));
         }
+
+        // Editing reuses the "Add service" form: fill it in, then save with PUT instead of POST
+        let editingServiceId = null;
+        function startEditService(id) {
+            const s = (shop.services || []).find(x => x._id === id);
+            if (!s) return;
+            editingServiceId = id;
+            $('svName').value = s.name || '';
+            $('svNameAr').value = s.nameAr || '';
+            $('svPrice').value = s.price;
+            $('svDesc').value = s.description || '';
+            $('svDescAr').value = s.descriptionAr || '';
+            $('svBtn').textContent = 'Save changes';
+            $('svCancel').hidden = false;
+            $('serviceForm').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        function stopEditService() {
+            editingServiceId = null;
+            $('serviceForm').reset();
+            $('svBtn').textContent = 'Add service';
+            $('svCancel').hidden = true;
+        }
+        $('svCancel').addEventListener('click', stopEditService);
 
         $('serviceForm').addEventListener('submit', async event => {
             event.preventDefault();
             showMessage('');
             try {
-                const data = await api('/shops/' + encodeURIComponent(shop._id) + '/services', {
-                    method: 'POST',
+                const url = '/shops/' + encodeURIComponent(shop._id) + '/services'
+                    + (editingServiceId ? '/' + encodeURIComponent(editingServiceId) : '');
+                // when editing, the route is /shops/:shopId/services/:serviceId (PUT)
+                const data = await api(url, {
+                    method: editingServiceId ? 'PUT' : 'POST',
                     body: {
                         name: $('svName').value.trim(),
+                        nameAr: $('svNameAr').value.trim(),
                         price: Number($('svPrice').value),
-                        description: $('svDesc').value.trim()
+                        description: $('svDesc').value.trim(),
+                        descriptionAr: $('svDescAr').value.trim()
                     }
                 });
                 shop = data.shop;
-                $('serviceForm').reset();
+                stopEditService();
                 renderServices();
             } catch (err) { handleError(err); }
         });
