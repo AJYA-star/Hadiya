@@ -285,6 +285,7 @@ const AR = {
   'Could not connect to the API. Verify backend status and CORS settings': 'تعذّر الاتصال بالخادم. حاول مجدداً بعد قليل',
   'The request timed out after 60 seconds. Render may still be spinning up. Try refreshing': 'انتهت مهلة الطلب. قد يكون الخادم قيد التشغيل، حاول تحديث الصفحة',
   'Invalid credentials': 'بيانات الدخول غير صحيحة', 'User already exists': 'المستخدم موجود بالفعل',
+  'An account with this email already exists': 'يوجد حساب بهذا البريد الإلكتروني بالفعل', 'An account with this phone number already exists': 'يوجد حساب بهذا الرقم بالفعل',
   'Not authorized': 'غير مصرّح لك', 'Not authorized. Please login': 'غير مصرّح. يرجى تسجيل الدخول',
   'Not authorized. Invalid or expired token': 'غير مصرّح. الجلسة غير صالحة أو منتهية',
   'Not authorized to view this order': 'غير مصرّح لك بعرض هذا الطلب', 'Not authorized to cancel this order': 'غير مصرّح لك بإلغاء هذا الطلب',

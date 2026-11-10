@@ -23,6 +23,19 @@
         .desc { margin-top: 10px; color: var(--ink-2); line-height: 1.6; overflow-wrap: anywhere; }
         .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
         .empty-state { background: var(--card); border: 1px dashed var(--line); border-radius: 18px; padding: 30px; text-align: center; color: var(--muted); font-weight: 700; }
+        .period { display: flex; gap: 8px; margin: 0 0 14px; }
+        .tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin-bottom: 18px; }
+        .tile { background: var(--chalk); border-radius: 16px; padding: 14px 16px; border: 4px solid #7A5236; }
+        .tile small { display: block; font-size: 0.72rem; letter-spacing: 1px; text-transform: uppercase; font-weight: 700; color: #CDBB98; }
+        .tile b { display: block; font-family: var(--script); font-size: 2.2rem; color: #E9D3A8; line-height: 1.15; font-variant-numeric: tabular-nums; }
+        .tile span { font-size: 0.8rem; color: #CDBB98; }
+        .scroll { overflow-x: auto; }
+        table.money { border-collapse: collapse; width: 100%; min-width: 620px; font-variant-numeric: tabular-nums; }
+        table.money th, table.money td { padding: 9px 8px; text-align: end; border-bottom: 1px solid var(--line); white-space: nowrap; }
+        table.money th:first-child, table.money td:first-child { text-align: start; white-space: normal; }
+        table.money th { font-size: 0.74rem; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); }
+        .owed { font-weight: 700; color: var(--wine); }
+        .note { margin-top: 14px; font-size: 0.88rem; color: var(--muted); line-height: 1.6; max-width: 80ch; }
         button:disabled { opacity: 0.6; cursor: not-allowed; }
         @media (max-width: 520px) { .facts { grid-template-columns: 1fr; } .facts dt { margin-top: 6px; } }
     </style>
@@ -41,8 +54,8 @@
         <main style="max-width:1000px">
             <div class="page-head">
                 <div class="script">for the Hadiya team</div>
-                <h1>Shop approvals</h1>
-                <p>Check each new shop, call the owner if you need to, then approve it. Customers only see approved shops.</p>
+                <h1>Hadiya admin</h1>
+                <p>Approve new shops, and see your orders and commission. Customers only see approved shops.</p>
             </div>
 
             <div id="message" class="message info" role="status" aria-live="polite" hidden></div>
@@ -51,6 +64,7 @@
                 <button type="button" class="tab on" data-tab="waiting">Waiting <span id="cWaiting"></span></button>
                 <button type="button" class="tab" data-tab="approved">Approved <span id="cApproved"></span></button>
                 <button type="button" class="tab" data-tab="all">All <span id="cAll"></span></button>
+                <button type="button" class="tab" data-tab="money">Orders &amp; money</button>
             </div>
 
             <div id="list" aria-busy="false">Loading shops...</div>
@@ -91,8 +105,9 @@
             $('cWaiting').textContent = '(' + waiting.length + ')';
             $('cApproved').textContent = '(' + approved.length + ')';
             $('cAll').textContent = '(' + shops.length + ')';
-            document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
+            document.querySelectorAll('#tabs .tab').forEach(t => t.classList.toggle('on', t.dataset.tab === tab));
 
+            if (tab === 'money') { renderMoney(); return; }
             const shown = tab === 'waiting' ? waiting : tab === 'approved' ? approved : shops;
             if (!shown.length) {
                 $('list').innerHTML = '<div class="empty-state">' +
@@ -126,6 +141,67 @@
             }).join('');
         }
 
+        /* ---- orders & money ---- */
+        let period = 'month';
+        let summary = null;
+        const aed = n => Number(n || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+        async function renderMoney() {
+            $('list').innerHTML = '<div class="empty-state">Loading numbers...</div>';
+            try {
+                const data = await api('/orders/admin/summary?period=' + period);
+                summary = data;
+            } catch (err) {
+                $('list').innerHTML = '';
+                showMessage(err.message || 'Could not load the numbers.', 'error');
+                return;
+            }
+            const t = summary.totals;
+            const st = summary.byStatus || {};
+            const open = (st.pending || 0) + (st.accepted || 0) + (st.in_progress || 0) + (st.ready || 0) + (st.out_for_delivery || 0);
+            const label = period === 'month' ? 'this month' : 'all time';
+            const rows = summary.shops.map(s => `<tr>
+                <td>${esc(s.name)}${s.nameAr ? ' · ' + esc(s.nameAr) : ''}</td>
+                <td>${s.rate}%</td><td>${s.orders}</td><td>${s.completed}</td>
+                <td>${aed(s.sales)}</td><td>${aed(s.commission)}</td>
+                <td class="owed">${aed(s.owed)}</td>
+                <td>${s.owed > 0 ? `<button type="button" class="btn btn-outline btn-sm" data-settle="${esc(s.shopId)}" data-name="${esc(s.name)}" data-owed="${s.owed}">Received</button>` : ''}</td>
+            </tr>`).join('');
+            $('list').innerHTML = `
+                <div class="period">
+                    <button type="button" class="tab ${period === 'month' ? 'on' : ''}" data-period="month">This month</button>
+                    <button type="button" class="tab ${period === 'all' ? 'on' : ''}" data-period="all">All time</button>
+                </div>
+                <div class="tiles">
+                    <div class="tile"><small>Orders (${label})</small><b>${t.orders}</b><span>${t.completed} completed, ${open} still open</span></div>
+                    <div class="tile"><small>Customers paid</small><b>${aed(t.sales)}</b><span>AED, completed orders (${label})</span></div>
+                    <div class="tile"><small>Hadiya commission</small><b>${aed(t.commission)}</b><span>AED earned (${label})</span></div>
+                    <div class="tile"><small>Owed to Hadiya</small><b>${aed(t.owed)}</b><span>AED, all time, not yet received</span></div>
+                </div>
+                <article class="card">
+                    <h2>Shop by shop</h2>
+                    <div class="scroll"><table class="money">
+                        <thead><tr><th>Shop</th><th>Rate</th><th>Orders</th><th>Done</th><th>Sales</th><th>Commission</th><th>Owed</th><th></th></tr></thead>
+                        <tbody>${rows || '<tr><td colspan="8">No orders yet.</td></tr>'}</tbody>
+                    </table></div>
+                    <p class="note"><b>How to read it.</b> Customers pay the shop in cash. Hadiya's commission is a percentage of the service price (the delivery fee stays with the shop) and only counts when an order is <b>completed</b>. "Owed" is the commission from completed orders that you have not yet marked as received, over all time. When a shop pays you, press <b>Received</b> to clear it.</p>
+                </article>`;
+        }
+
+        async function settle(shopId, name, owed, btn) {
+            if (!confirm('Confirm that you received AED ' + aed(owed) + ' from "' + name + '"? This clears all of its completed orders so far.')) return;
+            btn.disabled = true;
+            showMessage('');
+            try {
+                await api('/orders/admin/settle/' + encodeURIComponent(shopId), { method: 'PUT' });
+                showMessage('Saved. "' + name + '" is up to date.', 'success');
+                renderMoney();
+            } catch (err) {
+                btn.disabled = false;
+                showMessage(err.message || 'Something went wrong. Please try again.', 'error');
+            }
+        }
+
         async function setApproval(id, approve, btn) {
             const shop = shops.find(s => s._id === id);
             const name = shop ? shop.name : 'this shop';
@@ -151,6 +227,10 @@
             if (t) { tab = t.dataset.tab; render(); }
         });
         $('list').addEventListener('click', e => {
+            const p = e.target.closest('[data-period]');
+            if (p) { period = p.dataset.period; renderMoney(); return; }
+            const s = e.target.closest('[data-settle]');
+            if (s) { settle(s.dataset.settle, s.dataset.name, s.dataset.owed, s); return; }
             const b = e.target.closest('button[data-act]');
             if (b) setApproval(b.dataset.id, b.dataset.act === 'approve', b);
         });
