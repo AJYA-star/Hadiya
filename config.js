@@ -261,7 +261,7 @@ const AR = {
   'The backend reported an unsuccessful request': 'لم يكتمل الطلب',
   'An unexpected error occurred': 'حدث خطأ غير متوقع', 'No orders found for your shop yet': 'لا توجد طلبات لمتجرك بعد',
   'Customer': 'العميل', 'Unknown Customer': 'عميل غير معروف', 'Phone': 'الهاتف', 'Service Price': 'سعر الخدمة',
-  'Delivery Fee': 'رسوم التوصيل', 'Total Price': 'السعر الإجمالي', 'Current Status': 'الحالة الحالية', 'Placed on': 'تاريخ الطلب',
+  'Delivery Fee': 'رسوم التوصيل', 'Hadiya commission': 'عمولة هدية', 'You earn': 'أرباحك', 'Total Price': 'السعر الإجمالي', 'Current Status': 'الحالة الحالية', 'Placed on': 'تاريخ الطلب',
   'Update status:': 'تحديث الحالة:', 'Update': 'تحديث', 'Orders could not be loaded': 'تعذّر تحميل الطلبات',
   'Please choose a valid status': 'يرجى اختيار حالة صحيحة', 'This order already has that status': 'الطلب بهذه الحالة بالفعل',
   'Order status updated successfully': 'تم تحديث حالة الطلب بنجاح',

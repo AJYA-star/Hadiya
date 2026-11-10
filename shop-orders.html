@@ -287,6 +287,10 @@
                     addDetail(card, 'Delivery Fee', formatPrice(order.pricing.deliveryFee));
                 }
                 addDetail(card, 'Total Price', formatPrice(order.pricing && order.pricing.total));
+                if (order.pricing && Number.isFinite(Number(order.pricing.commission)) && order.pricing.shopEarnings != null) {
+                    addDetail(card, 'Hadiya commission', formatPrice(order.pricing.commission));
+                    addDetail(card, 'You earn', formatPrice(order.pricing.shopEarnings));
+                }
 
                 const statusRow = addDetail(card, 'Current Status', ORDER_STATUS_LABELS[order.status] || displayValue(order.status, 'Unknown'));
 
