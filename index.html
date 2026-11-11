@@ -18,6 +18,8 @@
         .hero h1 { margin-top: 6px; font-size: clamp(1.8rem, 3.6vw, 2.6rem); line-height: 1.15; letter-spacing: -0.3px; }
         body.arabic .hero h1 { font-size: clamp(1.7rem, 4.4vw, 2.5rem); line-height: 1.45; }
         .hero p { margin-top: 22px; max-width: 480px; color: var(--ink-2); font-size: 1.1rem; line-height: 1.7; }
+        .ios-hint { margin-top: 16px; max-width: 480px; padding: 12px 14px; border-radius: 12px; background: rgba(94,22,36,.08); font-size: .95rem !important; line-height: 1.6 !important; }
+        .footer-links a { color: inherit; text-decoration: underline; }
         .actions { margin-top: 32px; display: flex; flex-wrap: wrap; gap: 14px; }
         .scene { flex: 1 1 380px; min-width: 0; display: flex; justify-content: center; }
         .scene-frame {
@@ -104,6 +106,8 @@
                         <a href="register.html" class="btn btn-outline" id="registerCta" data-en="Create free account" data-ar="إنشاء حساب مجاني">Create free account</a>
                         <button type="button" class="btn btn-outline" id="installBtn" hidden data-en="Install app" data-ar="تثبيت التطبيق">Install app</button>
                     </div>
+                    <p class="ios-hint" id="iosHint" hidden data-en="To install on iPhone: open this page in Safari, tap the Share button (the square with an arrow), then choose “Add to Home Screen”."
+                       data-ar="للتثبيت على الآيفون: افتح هذه الصفحة في Safari، ثم اضغط زر المشاركة (المربع الذي فيه سهم)، ثم اختر «إضافة إلى الشاشة الرئيسية».">To install on iPhone: open this page in Safari, tap the Share button (the square with an arrow), then choose “Add to Home Screen”.</p>
                 </div>
 
                 <div class="scene">
@@ -184,6 +188,7 @@
         <div class="wrap">
             <span class="brand-name" data-en="Hadiya" data-ar="هدية">Hadiya</span>
             <span data-en="Gift wrapping, picked up and delivered back." data-ar="تغليف الهدايا، نستلمها ونعيدها إليك.">Gift wrapping, picked up and delivered back.</span>
+            <span class="footer-links"><a href="privacy.html" data-en="Privacy Policy" data-ar="سياسة الخصوصية">Privacy Policy</a> &nbsp;·&nbsp; <a href="terms.html" data-en="Terms of Use" data-ar="شروط الاستخدام">Terms of Use</a></span>
         </div>
     </footer>
 
@@ -227,8 +232,15 @@
             deferredPrompt = event;
             installBtn.hidden = false;
         });
+        // iPhone/iPad Safari has no install prompt: show the button and explain the manual steps
+        const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+        const alreadyInstalled = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true;
+        if (isIOS && !alreadyInstalled) installBtn.hidden = false;
         installBtn.addEventListener("click", async () => {
-            if (!deferredPrompt) return;
+            if (!deferredPrompt) {
+                if (isIOS) document.getElementById("iosHint").hidden = false;
+                return;
+            }
             deferredPrompt.prompt();
             await deferredPrompt.userChoice;
             deferredPrompt = null;

@@ -20,6 +20,8 @@
         .subtitle { margin: 6px 0 22px; text-align: center; color: var(--muted); }
         form label { margin-top: 15px; }
         select { margin-bottom: 4px; }
+        .legal-note { margin: 14px 0 0; font-size: .85rem; line-height: 1.6; color: var(--muted, #7a6a5a); text-align: center; }
+        .legal-note a { color: inherit; text-decoration: underline; }
         .shop-hint { margin: 8px 0 0; padding: 10px 12px; border-radius: 12px; background: rgba(94,22,36,.08); color: #5E1624; font-size: .9rem; line-height: 1.5; }
         button[type="submit"] { width: 100%; margin-top: 24px; }
         #message { display: none; margin-top: 18px; padding: 12px; border-radius: 12px; text-align: center; line-height: 1.4; font-weight: 700; }
@@ -94,6 +96,7 @@
         <option value="shop_owner" id="roleShop">Offer wrapping services (shop owner)</option>
       </select>
       <p class="shop-hint" id="shopHint" hidden></p>
+      <p class="legal-note" id="legalNote"></p>
 
       <button type="submit" class="btn" id="registerButton">
         Register
@@ -127,6 +130,7 @@
         roleLabel: "I want to",
         roleCustomer: "Wrap my gifts (customer)",
         roleShop: "Offer wrapping services (shop owner)",
+        legalNote: 'By registering you agree to the <a href="terms.html">Terms of Use</a> and the <a href="privacy.html">Privacy Policy</a>.',
         shopHint: "Every shop is reviewed by Hadiya before it appears to customers. You can set up your shop right after registering, and we will notify you when it is approved.",
         registerButton: "Register",
         registeringButton: "Registering...",
@@ -152,6 +156,7 @@
         roleLabel: "أريد أن",
         roleCustomer: "أغلّف هداياي (عميل)",
         roleShop: "أقدّم خدمات التغليف (صاحب متجر)",
+        legalNote: 'بالتسجيل فإنك توافق على <a href="terms.html">شروط الاستخدام</a> و<a href="privacy.html">سياسة الخصوصية</a>.',
         shopHint: "تتم مراجعة كل متجر من قِبل هدية قبل ظهوره للعملاء. يمكنك تجهيز متجرك مباشرة بعد التسجيل، وسنُشعرك عند الموافقة عليه.",
         registerButton: "تسجيل",
         registeringButton: "جارٍ التسجيل...",
@@ -218,6 +223,7 @@
       document.getElementById("roleCustomer").textContent = language.roleCustomer;
       document.getElementById("roleShop").textContent = language.roleShop;
       document.getElementById("shopHint").textContent = language.shopHint;
+      document.getElementById("legalNote").innerHTML = language.legalNote;
       document.getElementById("brandName").textContent = currentLanguage === "ar" ? "هدية" : "Hadiya";
 
       document.getElementById("loginQuestion").textContent =

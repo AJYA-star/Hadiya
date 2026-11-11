@@ -2,7 +2,7 @@
    - Pages & scripts: network first (so you always get the newest version), cache as offline fallback
    - API calls and other websites: never touched (always live data)
    Bump CACHE_NAME whenever you want to force everyone's cache to reset. */
-const CACHE_NAME = 'hadiya-v8';
+const CACHE_NAME = 'hadiya-v9';
 
 const PRECACHE = [
   './',
@@ -11,6 +11,8 @@ const PRECACHE = [
   'shop-detail.html',
   'login.html',
   'register.html',
+  'privacy.html',
+  'terms.html',
   'my-orders.html',
   'shop-owner-dashboard.html',
   'shop-orders.html',
